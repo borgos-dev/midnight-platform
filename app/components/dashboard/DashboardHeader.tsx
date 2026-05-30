@@ -71,63 +71,90 @@ export function DashboardHeader({
       overflow: "hidden",
     }}>
       <style>{`
-        /* Mobile: stack everything vertically */
+        /* 3-row stack on mobile:
+           Row 1 — identity (avatar + name + tier + city), full width
+           Row 2 — score strip, full width
+           Row 3 — bell + action buttons, full width
+           Tablet+: single horizontal row */
         .mn-dash-header {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 10px;
         }
-        /* Tablet+: single row with space-between */
         @media (min-width: 640px) {
           .mn-dash-header {
             flex-direction: row;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            gap: 16px;
           }
         }
-        /* Identity row: avatar + name always in a row */
+        /* Row 1: avatar + text block */
+        .mn-dash-header-top {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          width: 100%;
+        }
         .mn-dash-header-left {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
           min-width: 0;
           flex: 1;
         }
-        /* Score: inline with identity on mobile (right-aligned),
-           separate block on tablet+ */
+        /* Row 2: score — horizontal compact strip */
         .mn-dash-header-score {
-          text-align: right;
-          flex-shrink: 0;
-        }
-        @media (min-width: 640px) {
-          .mn-dash-header-score {
-            text-align: center;
-          }
-        }
-        /* Identity + score on same row on mobile */
-        .mn-dash-header-top {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 8px;
+          padding: 8px 12px;
+          border-radius: 10px;
+          width: 100%;
+          box-sizing: border-box;
         }
-        /* Actions: full-width row of buttons on mobile */
+        .mn-dash-header-score-label {
+          font-family: var(--font-dm-mono);
+          font-size: 9px;
+          letter-spacing: 0.08em;
+          opacity: 0.7;
+        }
+        .mn-dash-header-score-value {
+          font-family: var(--font-cormorant);
+          font-size: 22px;
+          font-weight: 700;
+          line-height: 1;
+        }
+        @media (min-width: 640px) {
+          .mn-dash-header-score {
+            width: auto;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+          }
+        }
+        /* Row 3: bell (compact) + text buttons (grow equally) */
         .mn-dash-header-actions {
           display: flex;
           align-items: center;
           gap: 8px;
-          flex-wrap: wrap;
           width: 100%;
         }
-        /* Text buttons (links) grow to fill space; bell button stays compact */
         .mn-dash-header-actions a {
           flex: 1;
           text-align: center;
           justify-content: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
           min-width: 0;
+          font-size: 10px !important;
+          padding: 8px 6px !important;
         }
-        /* Bell button — stays icon-sized, never stretches */
+        /* Bell stays icon-sized */
         .mn-dash-header-actions button {
           flex: none;
         }
@@ -231,7 +258,6 @@ export function DashboardHeader({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
-              maxWidth: "160px",
             }}>{name}</h1>
 
             {/* Tier badge */}
@@ -286,45 +312,29 @@ export function DashboardHeader({
         </div>
       </div>
 
-      {/* Center — Visibility score */}
+      {/* close mn-dash-header-top */}
+      </div>
+
+      {/* Row 2 — Score strip (full width, horizontal on mobile) */}
       <div className="mn-dash-header-score" style={{
-        textAlign: "center",
-        padding: "10px 16px",
-        borderRadius: "10px",
         border: `0.5px solid ${tokens.border}`,
         background: tokens.surfaceAlt,
       }}>
-        <div style={{
-          fontSize: "10px",
-          fontFamily: "var(--font-dm-mono)",
-          color: tokens.textMuted,
-          letterSpacing: "0.08em",
-          marginBottom: "4px",
-        }}>SCORE DE VISIBILITÉ</div>
-        <div style={{
-          fontSize: "26px",
-          fontWeight: 500,
-          color: tokens.accent,
-          lineHeight: 1,
-          fontFamily: "var(--font-cormorant)",
-        }}>
+        <span className="mn-dash-header-score-label" style={{ color: tokens.textMuted }}>
+          SCORE DE VISIBILITÉ
+        </span>
+        <span className="mn-dash-header-score-value" style={{ color: tokens.accent }}>
           {visibilityScore}
-          <span style={{
-            fontSize: "13px",
-            color: tokens.textMuted,
-          }}>/100</span>
-        </div>
+          <span style={{ fontSize: "12px", color: tokens.textMuted }}>/100</span>
+        </span>
         {isVipPlus && (
-          <div style={{
+          <span style={{
             fontSize: "9px",
             fontFamily: "var(--font-dm-mono)",
             color: "#5CB88A",
             letterSpacing: "0.06em",
-            marginTop: "3px",
-          }}>TOP 5% À {(location ?? "VOTRE VILLE").toUpperCase()}</div>
+          }}>TOP 5% À {(location ?? "VOTRE VILLE").toUpperCase()}</span>
         )}
-      </div>
-      {/* close mn-dash-header-top */}
       </div>
 
       {/* Right — Actions */}

@@ -110,7 +110,15 @@ export default async function Page({
     const detection = await detectVisitorCity();
     if (detection.city) {
       if (detection.source !== "cookie") {
-        await rememberDetectedCity(detection.city);
+        // Cookie writes are only allowed in Server Actions / Route Handlers
+        // in Next.js 15+. Wrap in try/catch so a failed cookie set never
+        // crashes the page — the redirect still fires and city detection
+        // still works; the cookie just won't persist for the next visit.
+        try {
+          await rememberDetectedCity(detection.city);
+        } catch {
+          // silently skip
+        }
       }
       redirect(`/?city=${encodeURIComponent(detection.city)}&auto=1`);
     }
