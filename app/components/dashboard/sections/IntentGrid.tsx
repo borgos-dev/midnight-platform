@@ -447,11 +447,19 @@ export function IntentGrid({
 
   return (
     <section>
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: "10px",
-      }}>
+      <div className="mn-intent-grid">
+      <style>{`
+        .mn-intent-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+        }
+        @media (min-width: 768px) {
+          .mn-intent-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+      `}</style>
         {/* Card 1 — Profile Views (all tiers) */}
         <StatCard
           label="PROFILE VIEWS"

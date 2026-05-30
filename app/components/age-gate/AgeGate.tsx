@@ -67,8 +67,8 @@ export function AgeGate() {
           <Image
             src="/Midnight-logo1.png"
             alt=""
-            width={160}
-            height={42}
+            width={100}
+            height={28}
             priority
             style={{ height: "auto", maxWidth: "100%" }}
           />
@@ -136,7 +136,7 @@ export function AgeGate() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 20px;
+          padding: 16px;
           background:
             radial-gradient(circle at 30% 30%, rgba(168, 85, 247, 0.10), transparent 50%),
             radial-gradient(circle at 70% 80%, rgba(230, 168, 23, 0.06), transparent 55%),
@@ -144,6 +144,7 @@ export function AgeGate() {
           backdrop-filter: blur(14px);
           -webkit-backdrop-filter: blur(14px);
           animation: ageGateBackdropIn 240ms ease;
+          overflow-y: auto;
         }
 
         @keyframes ageGateBackdropIn {
@@ -157,14 +158,12 @@ export function AgeGate() {
 
         .age-gate__panel {
           width: 100%;
-          max-width: 460px;
-          padding: 28px 26px 22px;
+          max-width: 420px;
+          padding: 18px 20px 16px;
           border-radius: 18px;
           background:
             linear-gradient(180deg, #16101F 0%, #0E0916 100%);
           border: 1px solid rgba(168, 85, 247, 0.30);
-          /* Stacked shadows: deep drop for lift, inner highlight for the
-             top edge, soft purple halo for brand glow. */
           box-shadow:
             0 24px 60px rgba(0, 0, 0, 0.55),
             0 0 0 1px rgba(255, 255, 255, 0.02) inset,
@@ -176,39 +175,35 @@ export function AgeGate() {
         .age-gate__brand {
           display: flex;
           justify-content: center;
-          margin-bottom: 20px;
+          margin-bottom: 12px;
         }
 
         .age-gate__title-row {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 8px;
           align-items: center;
           text-align: center;
-          margin-bottom: 18px;
+          margin-bottom: 10px;
         }
         .age-gate__chip {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          padding: 6px 12px;
+          gap: 5px;
+          padding: 4px 10px;
           border-radius: 999px;
           background: rgba(230, 168, 23, 0.14);
           border: 1px solid rgba(230, 168, 23, 0.50);
           color: #E6A817;
           font-family: var(--font-dm-mono);
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 800;
           letter-spacing: 0.14em;
-          /* Soft gold halo gives the warning chip the weight a "warning"
-             surface should carry without resorting to red. */
           box-shadow: 0 0 18px rgba(230, 168, 23, 0.25);
         }
         .age-gate__title {
           font-family: var(--font-cormorant);
-          /* Fluid scaling: tighter on small phones, more arresting on
-             tablets+ where there's room to breathe. */
-          font-size: clamp(26px, 4.5vw, 32px);
+          font-size: clamp(22px, 5vw, 28px);
           font-weight: 700;
           line-height: 1.12;
           letter-spacing: -0.02em;
@@ -217,23 +212,23 @@ export function AgeGate() {
 
         .age-gate__body {
           font-family: var(--font-dm-sans);
-          font-size: 14px;
-          line-height: 1.55;
+          font-size: 12.5px;
+          line-height: 1.5;
           color: var(--text-secondary);
           text-align: center;
-          margin: 0 0 14px;
+          margin: 0 0 10px;
         }
 
         .age-gate__notice {
           font-family: var(--font-dm-sans);
-          font-size: 12.5px;
-          line-height: 1.5;
+          font-size: 11.5px;
+          line-height: 1.45;
           color: var(--text-secondary);
           background: rgba(232, 84, 122, 0.08);
           border: 1px solid rgba(232, 84, 122, 0.25);
           border-radius: 10px;
-          padding: 10px 12px;
-          margin-bottom: 20px;
+          padding: 8px 10px;
+          margin-bottom: 12px;
         }
         .age-gate__notice strong {
           color: #E8547A;
@@ -243,24 +238,22 @@ export function AgeGate() {
         .age-gate__actions {
           display: flex;
           flex-direction: column;
-          gap: 10px;
-          margin-bottom: 14px;
+          gap: 7px;
+          margin-bottom: 10px;
         }
         .age-gate__btn {
           width: 100%;
-          padding: 14px 16px;
+          padding: 11px 16px;
           border-radius: 12px;
           font-family: var(--font-dm-mono);
-          font-size: 12.5px;
+          font-size: 12px;
           font-weight: 800;
           letter-spacing: 0.10em;
           cursor: pointer;
           transition: transform 0.15s ease, background 0.15s ease,
             border-color 0.15s ease, opacity 0.15s ease, box-shadow 0.18s ease;
           border: 1px solid transparent;
-          /* Minimum tap target on touch — long button labels were
-             borderline at 44px before. */
-          min-height: 48px;
+          min-height: 44px;
         }
         .age-gate__btn--primary {
           background: linear-gradient(135deg, var(--accent-purple) 0%, #7c3aed 100%);

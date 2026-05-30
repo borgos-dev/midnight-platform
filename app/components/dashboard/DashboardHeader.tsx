@@ -62,18 +62,47 @@ export function DashboardHeader({
       );
 
   return (
-    <header style={{
+    <header className="mn-dash-header" style={{
       padding: "16px 20px",
       borderRadius: "14px",
       border: `1px solid ${tokens.borderStrong}`,
       background: tokens.surface,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: "16px",
       position: "relative",
       overflow: "hidden",
     }}>
+      <style>{`
+        .mn-dash-header {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .mn-dash-header-left {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          min-width: 0;
+          flex: 1;
+        }
+        .mn-dash-header-score {
+          flex-shrink: 0;
+          text-align: center;
+          min-width: 80px;
+        }
+        .mn-dash-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        @media (max-width: 480px) {
+          .mn-dash-header-actions {
+            width: 100%;
+            justify-content: flex-end;
+          }
+        }
+      `}</style>
       {/* VIP+ top accent line */}
       {isVipPlus && (
         <div style={{
@@ -93,7 +122,7 @@ export function DashboardHeader({
       )}
 
       {/* Left — Identity */}
-      <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+      <div className="mn-dash-header-left">
         {/* Avatar */}
         <div style={{ position: "relative", flexShrink: 0 }}>
           <div style={{
@@ -147,9 +176,10 @@ export function DashboardHeader({
         </div>
 
         {/* Name + tier */}
-        <div>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{
             display: "flex", alignItems: "center",
+            flexWrap: "wrap",
             gap: "8px", marginBottom: "4px",
           }}>
             <h1 style={{
@@ -159,6 +189,10 @@ export function DashboardHeader({
               color: tokens.text,
               letterSpacing: "-0.01em",
               margin: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: "160px",
             }}>{name}</h1>
 
             {/* Tier badge */}
@@ -214,9 +248,9 @@ export function DashboardHeader({
       </div>
 
       {/* Center — Visibility score */}
-      <div style={{
+      <div className="mn-dash-header-score" style={{
         textAlign: "center",
-        padding: "10px 20px",
+        padding: "10px 16px",
         borderRadius: "10px",
         border: `0.5px solid ${tokens.border}`,
         background: tokens.surfaceAlt,
@@ -253,10 +287,7 @@ export function DashboardHeader({
       </div>
 
       {/* Right — Actions */}
-      <div style={{
-        display: "flex", alignItems: "center",
-        gap: "10px", flexShrink: 0,
-      }}>
+      <div className="mn-dash-header-actions">
         {/* Notification bell */}
         <NotificationBell creatorId={creatorId} tokens={tokens} />
 

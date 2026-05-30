@@ -13,27 +13,29 @@ export default async function DashboardProfilePage() {
   // Load profile + its current category links + the full category list +
   // the creator's external links (in display order). Single Promise.all so
   // all four queries hit the DB in parallel.
-  const [creator, allCategories, externalLinks] = await Promise.all([
-    prisma.creatorprofile.findUnique({
-      where: { userId: Number(session.user.id) },
-      include: {
-        categories: { select: { categoryId: true } },
-      },
-    }),
+  // Two-step: get the profile first so we have its id for the external
+  // links query. Using creatorprofileId directly avoids a nested-relation
+  // filter that can fail on some MySQL configurations.
+  const creator = await prisma.creatorprofile.findUnique({
+    where: { userId: Number(session.user.id) },
+    include: {
+      categories: { select: { categoryId: true } },
+    },
+  });
+
+  if (!creator) redirect("/");
+
+  const [allCategories, externalLinks] = await Promise.all([
     prisma.category.findMany({
       select: { id: true, slug: true, label: true },
       orderBy: { displayOrder: "asc" },
     }),
-    // Fetch links in the same query batch — keyed on the user id, then
-    // filtered server-side via the creatorprofile relation.
     prisma.creatorExternalLink.findMany({
-      where: { creatorprofile: { userId: Number(session.user.id) } },
+      where: { creatorprofileId: creator.id },
       orderBy: [{ displayOrder: "asc" }, { id: "asc" }],
       select: { id: true, kind: true, url: true, displayOrder: true },
-    }),
+    }).catch(() => [] as import("@/app/dashboard/profile/external-links-config").ExternalLinkRow[]),
   ]);
-
-  if (!creator) redirect("/");
 
   const selectedCategoryIds = new Set(
     creator.categories.map((c) => c.categoryId),
