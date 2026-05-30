@@ -9,6 +9,7 @@ export const creators: Creator[] = [
     whatsapp: "237670000000",
     bio: "Late night vibes. Private bookings only.",
     services: ["Private Session", "Photoshoot", "Video Call"],
+    tier: "VIP",
     posts: [
       {
         id: "p1",

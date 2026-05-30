@@ -1,78 +1,86 @@
-import Link from "next/link";
-import Image from "next/image";
-import type { Creator } from "@/app/types/creator";
+﻿import Link from "next/link";
+import type { Creator, CreatorTier } from "@/app/types/creator";
+import CoverMedia from "./CoverMedia";
 
+// Tier badge styling â€” uses brand gold (#E6A817 â†’ arbitrary value class)
+// so VIP+ here matches every other "VIP+" surface in the app (profile
+// avatar ring, dashboard chrome, signup gradient).
+const TIER_BADGE: Record<Exclude<CreatorTier, "REGULAR">, { label: string; className: string }> = {
+    VIP_PLUS: {
+        label: "VIP+",
+        className:
+            "bg-brand-gold text-black shadow-md shadow-brand-gold/30",
+    },
+    VIP: {
+        label: "VIP",
+        className: "bg-brand-purple text-white shadow-md shadow-brand-purple/30",
+    },
+};
 
-export default function CreatorCard({ creator }: { creator: Creator }) {
-    const cover = creator.photos?.[0];
+export default function CreatorCard({
+    creator,
+    priority = false,
+}: {
+    creator: Creator;
+    priority?: boolean;
+}) {
+    const tierBadge =
+        creator.tier && creator.tier !== "REGULAR" ? TIER_BADGE[creator.tier] : null;
 
     return (
         <Link
-        
             href={`/creator/${creator.id}`}
             className="block rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition overflow-hidden"
         >
-            {/* Thumbnail */}
+            {/* Thumbnail â€” 50vw on mobile (2-col grid), 33vw md, 25vw lg */}
             <div className="relative w-full h-44 bg-white/5">
-                {cover ? (
-                    <Image
-                        src={cover}
-                        alt={`${creator.name} cover`}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        priority={false}
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/50 text-sm">
-                        No photo
-                    </div>
+                <CoverMedia
+                    imageUrl={creator.photos?.[0] ?? null}
+                    videoUrl={creator.coverVideoUrl ?? null}
+                    alt={`${creator.name} cover`}
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    priority={priority}
+                />
+
+                {tierBadge && (
+                    <span
+                        className={`absolute top-2 left-2 text-xs font-semibold px-2 py-1 rounded-full ${tierBadge.className}`}
+                    >
+                        {tierBadge.label}
+                    </span>
                 )}
             </div>
 
             <div className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-lg">{creator.name}</h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-semibold text-lg">{creator.name}</h3>
 
-                            {creator.verified && (
-                                <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-300">
-                                    Verified
-                                </span>
-                            )}
+                    {creator.verified && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-300">
+                            Verified
+                        </span>
+                    )}
 
-                            <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-white/80">
-                                21+
-                            </span>
-                        </div>
-
-                        <p className="text-sm text-white/60">{creator.city}</p>
-                    </div>
-
-                    <span className="text-sm text-white/70">View →</span>
+                    <span className="ml-auto text-eyebrow uppercase tracking-wide text-white/40">
+                        18+
+                    </span>
                 </div>
+
+                <p className="text-sm text-white/60 mt-1">{creator.city}</p>
 
                 {/* Categories */}
-                <div className="mt-3 flex flex-wrap gap-2">
-                    {creator.categories?.slice(0, 4).map((c: string) => (
-                        <span
-                            key={c}
-                            className="text-xs px-2 py-1 rounded-full bg-purple-500/15 text-purple-200 border border-purple-500/20"
-                        >
-                            {c}
-                        </span>
-                    ))}
-                </div>
-
-                {/* Tags */}
-                <div className="mt-3 flex flex-wrap gap-2">
-                    {creator.tags?.slice(0, 3).map((t: string) => (
-                        <span key={t} className="text-xs px-2 py-1 rounded-full bg-white/10 text-white/70">
-                            {t}
-                        </span>
-                    ))}
-                </div>
+                {creator.categories && creator.categories.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {creator.categories.slice(0, 4).map((c: string) => (
+                            <span
+                                key={c}
+                                className="text-xs px-2 py-1 rounded-full bg-purple-500/15 text-purple-200 border border-purple-500/20"
+                            >
+                                {c}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
         </Link>
     );

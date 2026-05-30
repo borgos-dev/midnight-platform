@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE `creatorprofile` ADD COLUMN `approvedAt` DATETIME(3) NULL,
+    ADD COLUMN `approvedBy` INTEGER NULL,
+    ADD COLUMN `rejectedAt` DATETIME(3) NULL,
+    ADD COLUMN `rejectedBy` INTEGER NULL,
+    ADD COLUMN `rejectionReason` VARCHAR(191) NULL,
+    MODIFY `status` ENUM('PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED') NOT NULL DEFAULT 'PENDING';

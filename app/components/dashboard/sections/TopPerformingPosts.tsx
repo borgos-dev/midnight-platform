@@ -1,7 +1,10 @@
 // app/components/dashboard/sections/TopPerformingPosts.tsx
 "use client";
 
-import Link from "next/link";
+import type { TIER_TOKENS } from "@/app/dashboard/DashboardShell";
+import { AccessLevel } from "@prisma/client";
+
+type Tokens = typeof TIER_TOKENS[AccessLevel];
 
 type TopPost = {
   id: number;
@@ -14,133 +17,155 @@ type TopPost = {
 
 type TopPerformingPostsProps = {
   posts: TopPost[];
+  tokens: Tokens;
 };
 
-export function TopPerformingPosts({ posts }: TopPerformingPostsProps) {
-  if (posts.length === 0) {
-    return (
-      <section>
-        <div className="mb-5">
-          <h2 className="text-sm font-semibold text-white tracking-tight">
-            Top Performing Posts
-          </h2>
-        </div>
-        <div className="rounded-xl border border-white/[0.06] bg-[#0a0a12] p-8 text-center">
-          <p className="text-[12px] text-white/30">
-            No posts yet. Create your first post from My Posts.
-          </p>
-          <Link
-            href="/dashboard/media"
-            className="inline-block mt-3 rounded-lg bg-purple-600 px-4 py-2 text-[12px] font-medium text-white hover:bg-purple-500 transition"
-          >
-            Go to My Posts
-          </Link>
-        </div>
-      </section>
-    );
-  }
-
-  // Already sorted by likes from server — take top 3
-  const topPosts = posts.slice(0, 3);
+export function TopPerformingPosts({
+  posts,
+  tokens,
+}: TopPerformingPostsProps) {
+  if (posts.length === 0) return null;
 
   const rankColors = [
-    "from-amber-400/20 to-amber-400/5 border-amber-400/20",  // #1
-    "from-purple-500/15 to-purple-500/5 border-purple-500/20", // #2
-    "from-white/[0.04] to-white/[0.01] border-white/[0.06]",  // #3
+    tokens.accent,
+    tokens.textMuted,
+    tokens.textDim,
   ];
 
-  const rankBadgeColors = [
-    "text-amber-300 bg-amber-400/15 border-amber-400/30",
-    "text-purple-300 bg-purple-500/15 border-purple-500/30",
-    "text-white/50 bg-white/[0.06] border-white/10",
-  ];
+  const rankLabels = ["#1", "#2", "#3"];
+
+  const tierLabel: Record<string, string> = {
+    REGULAR: "Free",
+    VIP: "VIP",
+    VIP_PLUS: "VIP+",
+  };
 
   return (
-    <section>
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-sm font-semibold text-white tracking-tight">
-          Top Performing Posts
-        </h2>
-        <Link
-          href="/dashboard/media"
-          className="text-[11px] text-purple-400 hover:text-purple-300 transition"
-        >
-          View all →
-        </Link>
-      </div>
+    <section style={{
+      padding: "18px",
+      borderRadius: "14px",
+      border: `0.5px solid ${tokens.border}`,
+      background: tokens.surface,
+    }}>
+      {/* Header */}
+      <div style={{
+        fontSize: "10px",
+        fontFamily: "var(--font-dm-mono)",
+        color: tokens.textMuted,
+        letterSpacing: "0.08em",
+        marginBottom: "14px",
+      }}>TOP PERFORMING POSTS</div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {topPosts.map((post, i) => (
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${posts.length}, 1fr)`,
+        gap: "10px",
+      }}>
+        {posts.map((post, i) => (
           <div
             key={post.id}
-            className={`rounded-xl border bg-gradient-to-b overflow-hidden group hover:border-purple-500/30 transition ${
-              rankColors[i] ?? rankColors[2]
-            }`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "12px 14px",
+              borderRadius: "10px",
+              background: tokens.surfaceAlt,
+              border: `0.5px solid ${
+                i === 0 ? tokens.borderStrong : tokens.border
+              }`,
+              position: "relative",
+              overflow: "hidden",
+            }}
           >
-            {/* Rank badge + title */}
-            <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  rankBadgeColors[i] ?? rankBadgeColors[2]
-                }`}
-              >
-                #{i + 1}
-              </span>
-              <p className="text-[12px] font-semibold text-white/80 truncate">
-                {post.title}
-              </p>
-            </div>
+            {/* Top accent for #1 */}
+            {i === 0 && (
+              <div style={{
+                position: "absolute", top: 0,
+                left: 0, right: 0, height: "1px",
+                background: `linear-gradient(90deg, transparent, ${tokens.accent}66, transparent)`,
+              }} />
+            )}
 
-            {/* Thumbnail */}
-            <div className="h-40 bg-white/[0.02] overflow-hidden">
+            {/* Thumbnail or placeholder */}
+            <div style={{
+              width: "40px", height: "40px",
+              borderRadius: "8px",
+              background: tokens.surface,
+              border: `0.5px solid ${tokens.border}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "18px",
+              flexShrink: 0,
+              overflow: "hidden",
+            }}>
               {post.thumbnail ? (
-                post.mediaKind === "VIDEO" ? (
-                  <video
-                    src={post.thumbnail}
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                  />
-                ) : (
-                  <img
-                    src={post.thumbnail}
-                    alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                  />
-                )
+                <img
+                  src={post.thumbnail}
+                  alt={post.title}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: "8px",
+                  }}
+                />
               ) : (
-                <div className="flex items-center justify-center h-full">
-                  <span className="text-white/10 text-3xl">▦</span>
-                </div>
+                post.mediaKind === "VIDEO" ? "🎬" : "🖼"
               )}
             </div>
 
-            {/* Stats Row */}
-            <div className="px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-red-400/80">♥</span>
-                <span className="text-lg font-bold text-white tabular-nums">
-                  {post.likes.toLocaleString()}
-                </span>
-                <span className="text-[11px] text-white/40">likes</span>
-              </div>
+            {/* Info */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: "12px",
+                color: tokens.text,
+                fontFamily: "var(--font-dm-sans)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                marginBottom: "4px",
+                opacity: 0.9,
+              }}>{post.title}</div>
 
-              {/* Access level badge */}
-              <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                  post.accessLevel === "VIP_PLUS"
-                    ? "text-amber-300 border-amber-400/30 bg-amber-400/10"
-                    : post.accessLevel === "VIP"
-                    ? "text-purple-300 border-purple-500/30 bg-purple-500/10"
-                    : "text-white/40 border-white/10 bg-white/[0.04]"
-                }`}
-              >
-                {post.accessLevel === "VIP_PLUS"
-                  ? "VIP+"
-                  : post.accessLevel === "VIP"
-                  ? "VIP"
-                  : "Public"}
-              </span>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}>
+                <span style={{
+                  fontSize: "10px",
+                  color: tokens.textDim,
+                  fontFamily: "var(--font-dm-mono)",
+                }}>
+                  {post.likes} likes
+                </span>
+                <span style={{
+                  fontSize: "9px",
+                  padding: "1px 6px",
+                  borderRadius: "4px",
+                  background: tokens.accentSoft,
+                  color: tokens.accent,
+                  fontFamily: "var(--font-dm-mono)",
+                  letterSpacing: "0.04em",
+                  border: `0.5px solid ${tokens.accent}33`,
+                }}>
+                  {tierLabel[post.accessLevel] ?? post.accessLevel}
+                </span>
+              </div>
+            </div>
+
+            {/* Rank */}
+            <div style={{
+              fontSize: "14px",
+              fontFamily: "var(--font-cormorant)",
+              fontWeight: 700,
+              color: rankColors[i] ?? tokens.textDim,
+              flexShrink: 0,
+              opacity: i === 0 ? 1 : 0.6,
+            }}>
+              {rankLabels[i]}
             </div>
           </div>
         ))}

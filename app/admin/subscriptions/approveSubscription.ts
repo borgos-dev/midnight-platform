@@ -2,11 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { AccessLevel, CreatorStatus } from "@prisma/client";
 
 function resolveTier(plan: AccessLevel): AccessLevel {
-  if (plan === "VIP_PLUS" || plan === "VIP") {
-    return plan;
-  }
+  if (plan === "VIP_PLUS" || plan === "VIP" || plan === "PREMIUM") return plan;
   return "REGULAR";
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export async function approveSubscriptionById(id: number) {
   if (!id || Number.isNaN(id)) {
@@ -22,20 +22,24 @@ export async function approveSubscriptionById(id: number) {
       throw new Error("Subscription not found");
     }
 
+    // Idempotent — already paid → return as-is
     if (subscription.status === "PAID") {
       return subscription;
     }
 
-    if (!subscription.endsAt) {
-      throw new Error("Subscription end date missing");
-    }
+    // Recalculate dates at approval time — never trust the PENDING `endsAt`
+    const now = new Date();
+    const startsAt = now;
+    const endsAt = new Date(
+      now.getTime() + subscription.durationDays * DAY_MS
+    );
 
     const updatedSubscription = await tx.subscription.update({
       where: { id },
       data: {
         status: "PAID",
-        startsAt: subscription.startsAt ?? new Date(),
-        endsAt: subscription.endsAt,
+        startsAt,
+        endsAt,
       },
     });
 
@@ -44,7 +48,7 @@ export async function approveSubscriptionById(id: number) {
       data: {
         tier: resolveTier(subscription.plan),
         status: CreatorStatus.APPROVED,
-        subscriptionEndsAt: subscription.endsAt,
+        subscriptionEndsAt: endsAt,
       },
     });
 

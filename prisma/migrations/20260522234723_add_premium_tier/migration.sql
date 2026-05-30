@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE `creatorprofile` MODIFY `tier` ENUM('REGULAR', 'PREMIUM', 'VIP', 'VIP_PLUS') NOT NULL DEFAULT 'REGULAR';
+
+-- AlterTable
+ALTER TABLE `post` MODIFY `accessLevel` ENUM('REGULAR', 'PREMIUM', 'VIP', 'VIP_PLUS') NOT NULL DEFAULT 'REGULAR';
+
+-- AlterTable
+ALTER TABLE `subscription` MODIFY `plan` ENUM('REGULAR', 'PREMIUM', 'VIP', 'VIP_PLUS') NOT NULL;

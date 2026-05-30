@@ -4,8 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { AccessLevel } from "@prisma/client";
-import fs from "fs";
-import path from "path";
+import { enforceSubscriptionStatus } from "@/app/lib/subscription";
 
 /* ──────────────────────────────────────────────
    Helpers
@@ -15,8 +14,12 @@ async function getCreatorOwnedPost(postId: number) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
+  const userId = Number(session.user.id);
+  // Make tier reflect reality before any tier-gated decision
+  await enforceSubscriptionStatus(userId);
+
   const creator = await prisma.creatorprofile.findUnique({
-    where: { userId: Number(session.user.id) },
+    where: { userId },
   });
   if (!creator) throw new Error("Creator not found");
 
@@ -36,21 +39,15 @@ async function getCreatorOwnedPost(postId: number) {
    ────────────────────────────────────────────── */
 
 export async function deletePost(postId: number) {
-  const { post } = await getCreatorOwnedPost(postId);
+  // Ownership is enforced here — getCreatorOwnedPost throws unless the post
+  // belongs to the session's creator profile (no IDOR via guessed postId).
+  await getCreatorOwnedPost(postId);
 
-  // Delete physical media files
-  for (const m of post.media) {
-    const abs = path.join(process.cwd(), "public", m.filePath);
-    if (fs.existsSync(abs)) {
-      try {
-        fs.unlinkSync(abs);
-      } catch {
-        /* best-effort */
-      }
-    }
-  }
-
-  // Cascade deletes: post → media rows + likes (via onDelete: Cascade in schema)
+  // Media now lives in Cloudinary (filePath is a full https URL), not on
+  // local disk — the previous fs.unlink on a path.join(cwd, "public", url)
+  // was dead code that could never match. The DB cascade removes the media
+  // + like rows. (Reclaiming the Cloudinary asset itself requires the stored
+  // public_id and is tracked as a follow-up in SECURITY_AUDIT.md.)
   await prisma.post.delete({ where: { id: postId } });
 
   revalidatePath("/dashboard/media");

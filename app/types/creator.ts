@@ -9,6 +9,8 @@ export type Post = {
   isLiked?: boolean;
 };
 
+export type CreatorTier = "VIP_PLUS" | "VIP" | "REGULAR";
+
 export type Creator = {
   id: string;
   name: string;
@@ -28,4 +30,10 @@ export type Creator = {
   // 🔐 Trust signals (MVP)
   verified?: boolean;        // blue badge
   price?: number;            // optional service price
+  tier?: CreatorTier;        // mirrors prisma AccessLevel; absent treated as REGULAR
+
+  // Optional video cover; when present the card may show motion on fast
+  // connections, falling back to the first item in `photos` as a poster
+  // on slow/saveData connections.
+  coverVideoUrl?: string;
 };

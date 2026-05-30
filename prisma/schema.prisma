@@ -13,6 +13,7 @@ datasource db {
 
 enum AccessLevel {
   REGULAR
+  PREMIUM
   VIP
   VIP_PLUS
 }
@@ -32,6 +33,7 @@ enum PaymentProvider {
 enum CreatorStatus {
   PENDING
   APPROVED
+  REJECTED
   SUSPENDED
 }
 
@@ -58,12 +60,38 @@ model user {
   name         String?
   passwordHash String
   role         UserRole @default(CREATOR)
+  emailVerified Boolean @default(false)
+
+  // Soft-delete: when set, treat the user as gone (cannot log in,
+  // not returned by listings) — but the row, and the email reservation,
+  // remain so a banned creator can't re-register the same address.
+  deletedAt DateTime?
 
   creatorprofile creatorprofile?
   postlikes      postlike[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  reportsFiled            Report[]                @relation("ReportsFiled")
+  adminAuditEntries       AdminAuditLog[]
+
+  @@index([deletedAt])
+}
+
+//////////////////////////////////////////////////////
+// BANNED EMAIL
+//////////////////////////////////////////////////////
+// Explicit deny-list. Populated by admin action when banning a creator.
+// Signup checks both `user.email` (taken) and `BannedEmail.email` (banned).
+
+model BannedEmail {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  reason    String?
+  createdAt DateTime @default(now())
 }
 
 //////////////////////////////////////////////////////
@@ -75,7 +103,14 @@ model creatorprofile {
   displayName String
   bio         String?
   avatarUrl   String?
+  // `location` is the creator's CITY (e.g. "Douala"). It powers the
+  // city-level filter on the homepage and is what IP geolocation matches
+  // against.
   location    String?
+  // `neighborhood` is the creator's vicinity within the city (e.g.
+  // "Bonapriso", "Makepe", "Ange Raphaël"). Optional — older accounts may
+  // leave this blank until they edit their profile.
+  neighborhood String?
 
   userId Int  @unique
   user   user @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -83,27 +118,72 @@ model creatorprofile {
   tier   AccessLevel  @default(REGULAR)
   status CreatorStatus @default(PENDING)
 
+  // Audit trail for the approval queue. Set when an admin moves the
+  // status off of PENDING. Reusing the same columns when payment APIs
+  // automate subscription approvals later — the system fills them in
+  // instead of a human, no schema churn needed.
+  approvedBy       Int?
+  approvedAt       DateTime?
+  rejectedBy       Int?
+  rejectedAt       DateTime?
+  rejectionReason  String?
+
+  // Trust signal flipped by admin after off-platform ID check. Distinct from
+  // `status` (which gates display) — a creator can be APPROVED but not yet
+  // verified. Required to upgrade to VIP+.
+  verified Boolean @default(false)
+
+  // Used to compute the age shown on cards + profile, and to enforce the
+  // platform's 18+ rule at signup time. Stored as a date (not an Int) so
+  // age never goes stale and admin can verify it against the ID document.
+  birthDate DateTime?
+
   subscriptionEndsAt DateTime?
 
   whatsappNumber String?
 
-  // Analytics
-  profileViewsToday   Int @default(0)
-  whatsappClicksToday Int @default(0)
-  profileViewsWeek    Int @default(0)
-  whatsappClicksWeek  Int @default(0)
-  profileViewsMonth   Int @default(0)
-  whatsappClicksMonth Int @default(0)
+  // What the creator offers + starting price. `services` is a JSON array of
+  // strings (e.g. `["Private Session", "Photoshoot"]`) — stored as JSON so
+  // we can evolve into per-service pricing/duration later without another
+  // migration.
+  services      Json?
+  priceCfaFrom  Int?
 
-  // VIP+ advanced analytics
-  bestDay            String?
-  bestTime           String?
-  whatsappCTR        Float?
-  externalLinksCount Int?
+  // Creator-typed free-text tags shown on their public profile. Distinct
+  // from `categories` (which are platform-curated taxonomy driving the
+  // homepage filter). Tags are profile-only decoration — visible to
+  // visitors but never queried for filtering. Stored as a JSON array of
+  // strings; capped at 10 tags / 30 chars each server-side.
+  customTags    Json?
+
+  // Analytics
+  //
+  // View + click counts used to live on the row as today/week/month
+  // accumulators (dropped in migration 20260526200000). Everything is now
+  // computed from AnalyticsEvent on demand. See lib/analytics.ts for the
+  // helpers (getViewCountsForCreators / getClickCountsForCreators /
+  // calculateBestDayAndTime / calculateConversionRate / calculateCityRank).
+  //
+  // Three cached metric columns (bestDay, bestTime, whatsappCTR) were also
+  // dropped (migration 20260526210000) — no read site ever consulted them;
+  // the dashboard uses calculate* helpers directly.
+  //
+  // External links live in their own table (CreatorExternalLink below)
+  // rather than as a column here — one row per link supports kind + URL +
+  // ordering without cramming everything into JSON or counters.
 
   post          post[]
   media         media[]
   subscriptions Subscription[]
+  analyticsEvents AnalyticsEvent[]
+  pageViews       PageView[]
+  notifications   Notification[]
+  categories      CreatorCategory[]
+  promotedAds     Ad[]
+  boosts          Boost[]
+  reports         Report[]
+  externalLinks   CreatorExternalLink[]
+  reviews         Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -111,7 +191,283 @@ model creatorprofile {
   @@index([status])
   @@index([location])
   @@index([tier])
-  
+}
+
+//////////////////////////////////////////////////////
+// CATEGORIES
+//////////////////////////////////////////////////////
+//
+// Data-driven so admin can add or rename categories without a schema change.
+// `slug` is the stable URL/key (e.g. "THREESOME"); `label` is the display
+// string. `displayOrder` controls pill order on the homepage.
+
+model Category {
+  id           Int    @id @default(autoincrement())
+  slug         String @unique
+  label        String
+  displayOrder Int    @default(0)
+
+  creators CreatorCategory[]
+
+  createdAt DateTime @default(now())
+
+  @@index([displayOrder])
+}
+
+model CreatorCategory {
+  creatorprofileId Int
+  categoryId       Int
+
+  creatorprofile creatorprofile @relation(fields: [creatorprofileId], references: [id], onDelete: Cascade)
+  category       Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([creatorprofileId, categoryId])
+  @@index([categoryId])
+}
+
+//////////////////////////////////////////////////////
+// ADS
+//////////////////////////////////////////////////////
+//
+// Ad slot inventory for the homepage. Two kinds today:
+//   - HOUSE             — Midnight's own promos ("Become a Creator", etc.)
+//   - PROMOTED_CREATOR  — paid placement for a Regular-tier creator
+// Both share the same slot; the renderer switches layout based on `kind`.
+//
+// Time-window + city filters let us run "Douala weekend" campaigns without
+// touching code. Impressions / clicks are simple counters — fine for MVP;
+// at scale they move to AnalyticsEvent rows.
+
+enum AdKind {
+  HOUSE
+  PROMOTED_CREATOR
+}
+
+enum AdStatus {
+  ACTIVE
+  PAUSED
+}
+
+model Ad {
+  id       Int      @id @default(autoincrement())
+  kind     AdKind
+  status   AdStatus @default(ACTIVE)
+  priority Int      @default(0)
+
+  // Display copy
+  title    String
+  body     String?
+  imageUrl String?
+
+  // CTA. For PROMOTED_CREATOR the click resolves to /creator/<id> regardless
+  // of `ctaUrl`, so this field is mainly used by HOUSE ads.
+  ctaLabel String
+  ctaUrl   String
+
+  // Optional flight window (null = no bound). Useful for one-week campaigns.
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  // Optional geo scope. null = global; otherwise exact city match against
+  // creatorprofile.location values.
+  city String?
+
+  // For PROMOTED_CREATOR — points at the creator being boosted so the slot
+  // can pull live avatar/tier/verified data instead of duplicating it here.
+  creatorprofileId Int?
+  creatorprofile   creatorprofile? @relation(fields: [creatorprofileId], references: [id], onDelete: SetNull)
+
+  impressions Int @default(0)
+  clicks      Int @default(0)
+
+  // Optional back-link to the Boost that funded this ad (null for HOUSE
+  // ads and for admin-created PROMOTED_CREATOR rows). Lets us expire the
+  // ad when the funding boost runs out.
+  boost Boost?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, priority])
+  @@index([city])
+  @@index([creatorprofileId])
+}
+
+//////////////////////////////////////////////////////
+// BOOSTS  (Regular-tier paid visibility purchases)
+//////////////////////////////////////////////////////
+//
+// A Boost is a paid order placed by a Regular-tier creator to appear in
+// the homepage ad slot for a fixed window. Lifecycle:
+//
+//   PENDING_PAYMENT  → creator chose duration + provider, no proof yet
+//   PENDING_REVIEW   → creator sent proof to admin (WhatsApp), awaiting review
+//   ACTIVE           → admin approved; we created the Ad row and started the clock
+//   EXPIRED          → endsAt has passed; the linked Ad is no longer served
+//   REJECTED         → admin found the payment proof invalid
+//
+// Mobile Money in Cameroon is reconciled manually, so the approval step
+// happens via /admin/boosts the same way subscriptions are approved.
+
+enum BoostStatus {
+  PENDING_PAYMENT
+  PENDING_REVIEW
+  ACTIVE
+  EXPIRED
+  REJECTED
+}
+
+enum BoostProvider {
+  MTN_MOMO
+  ORANGE_MONEY
+}
+
+model Boost {
+  id               Int            @id @default(autoincrement())
+  creatorprofileId Int
+  creatorprofile   creatorprofile @relation(fields: [creatorprofileId], references: [id], onDelete: Cascade)
+
+  durationDays Int
+  amountCfa    Int
+  provider     BoostProvider
+  status       BoostStatus   @default(PENDING_PAYMENT)
+
+  // Filled when the creator visits /boost/proof and submits their MoMo
+  // phone number (used to verify against the inbound receipt).
+  phoneNumber String?
+
+  // Set when admin approves. The Ad's flight window mirrors these dates.
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  // One-to-one link to the Ad row this boost funds. Unique constraint
+  // prevents a boost from accidentally being approved twice.
+  adId Int? @unique
+  ad   Ad?  @relation(fields: [adId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([creatorprofileId])
+  @@index([status])
+  @@index([endsAt])
+}
+
+//////////////////////////////////////////////////////
+// EXTERNAL LINKS  (Per-creator social / contact links)
+//////////////////////////////////////////////////////
+//
+// Each row is a single link a creator chose to display on their public
+// profile (Instagram, OnlyFans, Telegram, etc.). Visitors tap the link and
+// get redirected through /api/link-click/[id] which records the click as
+// an `external_link_click` AnalyticsEvent before 302-ing to the URL.
+//
+// Why a separate table (not a JSON blob on creatorprofile):
+//   - Per-link click counts in analytics need a stable id to attribute to.
+//   - Reordering / deleting individual links is a row update, not a full
+//     re-write of an array column.
+//   - Cap (currently 5 per creator) is enforced server-side at the action
+//     layer, not via a schema constraint, so it can be raised without a
+//     migration.
+
+enum ExternalLinkKind {
+  INSTAGRAM
+  TIKTOK
+  SNAPCHAT
+  ONLYFANS
+  TELEGRAM
+  TWITTER
+  YOUTUBE
+  WEBSITE
+}
+
+model CreatorExternalLink {
+  id               Int              @id @default(autoincrement())
+  creatorprofileId Int
+  creatorprofile   creatorprofile   @relation(fields: [creatorprofileId], references: [id], onDelete: Cascade)
+
+  kind ExternalLinkKind
+  // VarChar(500) is well over the longest practical social-profile URL.
+  // Server-side action validates URL well-formedness + https-only.
+  url          String @db.VarChar(500)
+  // 0-indexed display position. Reordering only touches affected rows.
+  displayOrder Int    @default(0)
+
+  // Click counter — cached lazy aggregate of external_link_click events.
+  // Mostly informational; the dashboard reads windowed counts directly
+  // from AnalyticsEvent. Kept here as a fast "this link got N clicks
+  // total" indicator without a per-link aggregate query.
+  totalClicks Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([creatorprofileId, displayOrder])
+}
+
+//////////////////////////////////////////////////////
+// REPORTS  (Content moderation queue)
+//////////////////////////////////////////////////////
+//
+// Visitors flag profiles via the Report button on /creator/[id].
+// Anonymous visitors can report (reporterUserId stays null); logged-in
+// users are attributed so a repeat-flagger pattern shows. Each report
+// flows through a single decision: resolved-removed (creator suspended
+// or content scrubbed), resolved-no-action (no violation found), or
+// dismissed (spam / duplicate report).
+//
+// Reporter identity is NEVER shown to the reported creator — admins see
+// it for context only.
+
+enum ReportStatus {
+  PENDING_REVIEW
+  RESOLVED_REMOVED
+  RESOLVED_NO_ACTION
+  DISMISSED
+}
+
+enum ReportCategory {
+  TRAFFICKING_OR_MINORS
+  IMPERSONATION
+  STOLEN_CONTENT
+  HARASSMENT
+  ILLEGAL_SERVICES
+  OTHER
+}
+
+model Report {
+  id Int @id @default(autoincrement())
+
+  // Target creator (always required).
+  creatorprofileId Int
+  creatorprofile   creatorprofile @relation(fields: [creatorprofileId], references: [id], onDelete: Cascade)
+
+  // Optional reporter (null = anonymous visitor).
+  reporterUserId Int?
+  reporterUser   user? @relation("ReportsFiled", fields: [reporterUserId], references: [id], onDelete: SetNull)
+
+  // Visitor-supplied free text. Trimmed + length-capped server-side.
+  reason   String
+  category ReportCategory?
+
+  status ReportStatus @default(PENDING_REVIEW)
+
+  // Decision audit — set when an admin closes the report.
+  reviewedBy Int?
+  reviewedAt DateTime?
+  reviewNote String?
+
+  // Stored IP for anonymous reports so we can spot dogpile/spam patterns.
+  // Hashed before storage so a leak of this column doesn't disclose
+  // visitor IPs verbatim. (Hash done server-side; column type stays string.)
+  reporterIpHash String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([creatorprofileId])
+  @@index([createdAt])
 }
 
 //////////////////////////////////////////////////////
@@ -126,6 +482,21 @@ model post {
 
   accessLevel AccessLevel @default(REGULAR)
   blurred  Boolean  @default(false)
+  // Blur intensity (CSS filter pixels) applied to gated media on the
+  // public profile for visitors below the post's access level. Default 8
+  // keeps motion visible — a "tease" that invites the WhatsApp tap. VIP+
+  // creators control this per-post via a slider in the upload form
+  // (range 4 = light tease → 16 = heavy reveal-blocking). Lower tiers
+  // can't set blur > default; their content is either gated or open.
+  blurIntensity Int @default(8)
+  // Whether the public renderer overlays the WhatsApp "Tap to unlock"
+  // lock on top of the blurred preview. Default TRUE so existing posts
+  // and the default creator workflow keep the conversion funnel.
+  // Creators who want a clean tease (blur only, no CTA) can flip this
+  // off per-post during upload — see UploadPostForm. The blur itself
+  // is controlled by `blurred` + `blurIntensity` above; this flag only
+  // affects the lock overlay rendered in FeedPost.
+  showLock Boolean @default(true)
   postType PostType @default(FEED)
 
   creatorprofile creatorprofile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
@@ -166,16 +537,34 @@ model media {
 //////////////////////////////////////////////////////
 
 model postlike {
-  postId Int
-  userId Int
+  id Int @id @default(autoincrement())
 
-  post post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId Int
+
+  // `userId` is set for registered creators who like (rare but possible
+  // when a creator browses peer content while signed in).
+  // `visitorId` is the cookie-based identifier the analytics endpoint
+  // already uses (`vid` cookie). It's set for anonymous visitor likes.
+  //
+  // Exactly one of {userId, visitorId} is non-null on every row.
+  // Anonymous likes are the dominant case in this platform because
+  // visitors don't need accounts to engage (see business model).
+  userId    Int?
+  visitorId String? @db.VarChar(64)
+
+  post post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user user? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
-  @@id([postId, userId])
+  // Dedup at the actor-per-post level. With nullable columns MySQL allows
+  // multiple NULLs through a unique index — which is correct here because
+  // anonymous likes dedup via visitorId, signed-in likes via userId, and
+  // they never collide (a row has exactly one of the two set).
+  @@unique([postId, userId])
+  @@unique([postId, visitorId])
   @@index([userId])
+  @@index([visitorId])
 }
 
 //////////////////////////////////////////////////////
@@ -185,7 +574,9 @@ model postlike {
 model Subscription {
   id               Int            @id @default(autoincrement())
   creatorProfileId Int
-  creatorProfile   creatorprofile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  // Restrict cascade: payment history must outlive a profile deletion.
+  // To remove a creator, archive their profile and dereference subscriptions explicitly.
+  creatorProfile   creatorprofile @relation(fields: [creatorProfileId], references: [id], onDelete: Restrict)
 
   plan         AccessLevel
   durationDays Int                // 7, 14, 30
@@ -205,4 +596,238 @@ model Subscription {
   @@index([creatorProfileId])
   @@index([status])
   @@index([endsAt])
+}
+
+//////////////////////////////////////////////////////
+// PASSWORD RESET TOKEN
+//////////////////////////////////////////////////////
+
+model PasswordResetToken {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  hashedToken String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+//////////////////////////////////////////////////////
+// EMAIL VERIFICATION TOKEN
+//////////////////////////////////////////////////////
+
+model EmailVerificationToken {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  hashedToken String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+//////////////////////////////////////////////////////
+// ANALYTICS EVENT
+//////////////////////////////////////////////////////
+
+model AnalyticsEvent {
+  id        Int      @id @default(autoincrement())
+  creatorId Int
+  eventType String
+  country   String?
+  city      String?
+  device    String?
+  source    String?
+  // A/B test arm the user was bucketed into when this event fired.
+  // Nullable because most existing rows pre-date the experiment and we
+  // don't backfill. Populated for cta_exposure / whatsapp_click /
+  // upgrade_click; left null for non-experiment events.
+  variant   String?
+  createdAt DateTime @default(now())
+
+  creatorprofile creatorprofile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([creatorId, eventType, createdAt])
+  // For per-arm conversion queries: WHERE eventType = ? AND variant = ?
+  @@index([eventType, variant])
+}
+
+
+
+
+//////////////////////////////////////////////////////
+// PAGE VIEW
+//////////////////////////////////////////////////////
+
+model PageView {
+  id        Int      @id @default(autoincrement())
+  creatorId Int
+  country   String?
+  city      String?
+  device    String?
+  source    String?
+  createdAt DateTime @default(now())
+
+  creatorprofile creatorprofile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@index([createdAt])
+  @@index([country])
+  @@index([creatorId, createdAt])
+}
+//////////////////////////////////////////////////////
+// NOTIFICATION
+//////////////////////////////////////////////////////
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  creatorId Int
+  type      String   // "profile_view" | "whatsapp_click" | "new_subscriber" | "subscription_expiring"
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  creatorprofile creatorprofile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, read])
+  @@index([creatorId, createdAt])
+}
+
+//////////////////////////////////////////////////////
+// ADMIN AUDIT LOG
+//////////////////////////////////////////////////////
+//
+// Central log of every admin action across the platform — a single
+// pane of glass for "what happened, who did it, when, and to what."
+// Each existing admin action (approvals, suspensions, report decisions,
+// ad changes, etc.) writes a row here in the same transaction as the
+// underlying mutation so the log is always in sync with state.
+//
+// `targetType` + `targetId` is a polymorphic pointer instead of one FK
+// per entity type — keeps the schema small as we add more actions.
+// `metadata` carries snapshot context that the bare action enum can't
+// (e.g. the rejection reason text, the boost duration days, etc.).
+
+enum AdminAction {
+  CREATOR_APPROVED
+  CREATOR_REJECTED
+  CREATOR_SUSPENDED
+  CREATOR_RESTORED
+  CREATOR_VERIFIED
+  CREATOR_UNVERIFIED
+  SUBSCRIPTION_APPROVED
+  BOOST_APPROVED
+  BOOST_REJECTED
+  REPORT_RESOLVED_REMOVED
+  REPORT_RESOLVED_NO_ACTION
+  REPORT_DISMISSED
+  AD_CREATED
+  AD_UPDATED
+  AD_PAUSED
+  AD_RESUMED
+  AD_DELETED
+}
+
+model AdminAuditLog {
+  id Int @id @default(autoincrement())
+
+  action      AdminAction
+  adminUserId Int
+  adminUser   user        @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  // Polymorphic target. Nullable because some actions don't have a target
+  // (e.g. an AD_CREATED could theoretically be a "house ad with no creator");
+  // currently every action has a target, but the schema stays flexible.
+  targetType String?
+  targetId   Int?
+
+  // Human-readable note (e.g. the rejection reason, the review note,
+  // the new ad's title). Surfaces directly on the audit page.
+  note String?
+
+  // Snapshot of additional context that doesn't fit `note`. Tier of the
+  // affected creator, plan being approved, etc. Inspectable from the
+  // audit page but not formatted.
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([adminUserId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+//////////////////////////////////////////////////////
+// REVIEWS  (Visitor-authored creator reviews)
+//////////////////////////////////////////////////////
+//
+// Anonymous reviews — visitors don't need an account to leave a star
+// rating and optional comment, matching the platform's no-account-required
+// engagement model. Dedup is via the same `vid` cookie the analytics +
+// like endpoints use.
+//
+// Moderation is hybrid:
+//   - Star rating is published immediately (status = LIVE).
+//   - Free-text comment goes through the moderation queue; until an admin
+//     approves, only the star shows on the public profile.
+//
+// This means the average rating + count appear instantly on the creator's
+// profile (fast feedback for visitors), but the abusive comment vector
+// is contained behind admin review (lower harassment + fake review risk).
+
+enum ReviewStatus {
+  // Star is live, no comment OR comment still pending. The default for
+  // a freshly submitted review with a comment that hasn't been moderated.
+  LIVE
+  // Star + comment both live — admin approved the comment.
+  COMMENT_APPROVED
+  // Star kept, comment rejected — visitor was abusive. The star still
+  // counts in the average so a single abusive review doesn't lose the
+  // creator a real signal.
+  COMMENT_REJECTED
+  // Whole review hidden (used by admin to remove proven fake/abuse).
+  HIDDEN
+}
+
+model Review {
+  id Int @id @default(autoincrement())
+
+  creatorprofileId Int
+  creatorprofile   creatorprofile @relation(fields: [creatorprofileId], references: [id], onDelete: Cascade)
+
+  // Cookie-based visitor identifier (same `vid` cookie used by likes +
+  // analytics). One review per (creator, visitor) — enforced via the
+  // unique constraint below. Stored separately from analytics rows so
+  // reviews survive an analytics-table purge.
+  visitorId String @db.VarChar(64)
+
+  // 1..5 inclusive. Enforced in the action layer; the schema keeps a
+  // simple Int for index-friendliness and Prisma compatibility.
+  rating Int
+
+  // Optional free-text comment (varchar limit prevents abuse). Empty
+  // string is treated as "no comment" by the public renderer.
+  comment String? @db.VarChar(800)
+
+  status ReviewStatus @default(LIVE)
+
+  // Set when an admin moderates the comment. Null when no moderation
+  // has happened yet (status will be LIVE in that case).
+  moderatedAt     DateTime?
+  moderatedByUserId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([creatorprofileId, visitorId])
+  @@index([creatorprofileId])
+  @@index([status])
+  @@index([createdAt])
 }

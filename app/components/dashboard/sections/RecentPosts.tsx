@@ -1,4 +1,4 @@
-// app/components/dashboard/sections/RecentPosts.tsx
+﻿// app/components/dashboard/sections/RecentPosts.tsx
 import Link from "next/link";
 
 type RecentPost = {
@@ -24,7 +24,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
             Recent Posts
           </h2>
         </div>
-        <div className="rounded-xl border border-white/[0.06] bg-[#0a0a12] p-8 text-center">
+        <div className="rounded-xl border border-white/6 bg-surface p-8 text-center">
           <p className="text-[12px] text-white/30">
             You haven&apos;t posted anything yet.
           </p>
@@ -47,9 +47,9 @@ export function RecentPosts({ posts }: RecentPostsProps) {
         </h2>
         <Link
           href="/dashboard/media"
-          className="text-[11px] text-purple-400 hover:text-purple-300 transition"
+          className="text-label text-purple-400 hover:text-purple-300 transition"
         >
-          View all →
+          View all â†’
         </Link>
       </div>
 
@@ -57,10 +57,10 @@ export function RecentPosts({ posts }: RecentPostsProps) {
         {posts.map((post) => (
           <div
             key={post.id}
-            className="rounded-xl border border-white/[0.06] bg-[#0a0a12] overflow-hidden"
+            className="rounded-xl border border-white/6 bg-surface overflow-hidden"
           >
             {/* Thumbnail */}
-            <div className="h-36 bg-white/[0.02] flex items-center justify-center">
+            <div className="h-36 bg-white/2 flex items-center justify-center">
               {post.thumbnail ? (
                 post.mediaKind === "VIDEO" ? (
                   <video
@@ -76,7 +76,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
                   />
                 )
               ) : (
-                <span className="text-white/10 text-2xl">▦</span>
+                <span className="text-white/10 text-2xl">â–¦</span>
               )}
             </div>
 
@@ -92,7 +92,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
                       ? "text-amber-300 border-amber-400/30 bg-amber-400/10"
                       : post.accessLevel === "VIP"
                       ? "text-purple-300 border-purple-500/30 bg-purple-500/10"
-                      : "text-white/30 border-white/10 bg-white/[0.03]"
+                      : "text-white/30 border-white/10 bg-white/3"
                   }`}
                 >
                   {post.accessLevel === "VIP_PLUS"
@@ -101,7 +101,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
                 </span>
               </div>
 
-              <p className="text-[10px] text-white/25">
+              <p className="text-eyebrow text-white/25">
                 {new Date(post.createdAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",

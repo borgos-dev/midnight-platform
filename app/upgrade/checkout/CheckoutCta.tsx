@@ -3,9 +3,10 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPendingSubscription } from "./actions";
+import type { PaidPlanCode } from "@/app/lib/plans";
 
 type Props = {
-  plan: "VIP" | "VIP_PLUS";
+  plan: PaidPlanCode;
   provider: "MTN_MOMO" | "ORANGE_MONEY";
 };
 

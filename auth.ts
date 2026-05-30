@@ -2,17 +2,50 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
 import { UserRole } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import type { NextAuthOptions } from "next-auth";
+import { comparePassword } from "@/app/lib/passwords";
+
+const isProd = process.env.NODE_ENV === "production";
+const cookiePrefix = isProd ? "__Secure-" : "";
 
 export const authOptions: NextAuthOptions = {
-  // ❌ NO adapter — PrismaAdapter breaks Credentials + JWT.
-  //    The adapter tries to look up a DB session that doesn't exist
-  //    because JWT sessions live in cookies, not the database.
-  session: { strategy: "jwt" },
+  // No adapter — PrismaAdapter breaks Credentials + JWT.
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  },
   secret: process.env.NEXTAUTH_SECRET,
+
+  cookies: {
+    sessionToken: {
+      name: `${cookiePrefix}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: isProd,
+      },
+    },
+    callbackUrl: {
+      name: `${cookiePrefix}next-auth.callback-url`,
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: isProd,
+      },
+    },
+    csrfToken: {
+      name: `${isProd ? "__Host-" : ""}next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: isProd,
+      },
+    },
+  },
 
   providers: [
     CredentialsProvider({
@@ -28,10 +61,15 @@ export const authOptions: NextAuthOptions = {
 
         if (!email || !password) return null;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({
+          where: { email: email.toLowerCase().trim() },
+        });
         if (!user) return null;
 
-        const isValid = await bcrypt.compare(password, user.passwordHash);
+        // Reject soft-deleted accounts (deletedAt set)
+        if ((user as { deletedAt?: Date | null }).deletedAt) return null;
+
+        const isValid = await comparePassword(password, user.passwordHash);
         if (!isValid) return null;
 
         return {
@@ -46,21 +84,22 @@ export const authOptions: NextAuthOptions = {
 
   pages: {
     signIn: "/login",
+    error: "/login",
   },
 
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role;
+        token.id = (user as { id: string }).id;
+        token.role = (user as { role: UserRole }).role;
       }
       return token;
     },
 
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id as string;
-        (session.user as any).role = token.role as UserRole;
+        (session.user as { id?: string }).id = token.id as string;
+        (session.user as { role?: UserRole }).role = token.role as UserRole;
       }
       return session;
     },

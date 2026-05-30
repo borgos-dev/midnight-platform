@@ -1,32 +1,29 @@
 "use server";
 
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/app/lib/auth-helpers";
 
 export async function deleteAccount() {
-  const session = await auth();
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Unauthorized");
 
-  if (!session?.user) {
-    throw new Error("Unauthorized");
-  }
+  // Soft delete + reserve the email so a banned user can't re-register.
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        deletedAt: new Date(),
+        // Invalidate sessions on next request — the authorize() callback
+        // rejects users with deletedAt set, but we also scramble the password
+        // hash so any leaked credential can't ever log this account in.
+        passwordHash: "deleted-account",
+      },
+    }),
+    // Wipe any outstanding reset / verification tokens
+    prisma.passwordResetToken.deleteMany({ where: { userId: user.id } }),
+    prisma.emailVerificationToken.deleteMany({ where: { userId: user.id } }),
+  ]);
 
-  const userId = Number(session.user.id);
-
-  // Double check user exists
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  // Delete user (creatorprofile cascades automatically)
-  await prisma.user.delete({
-    where: { id: userId },
-  });
-
-  // Redirect to homepage after deletion
   redirect("/");
 }

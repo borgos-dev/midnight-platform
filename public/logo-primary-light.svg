@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 80" width="420" height="80">
+  <defs>
+    <linearGradient id="iconbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6B0FD4"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+    <linearGradient id="wordmark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6B0FD4"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon -->
+  <rect x="0" y="4" width="68" height="68" rx="15" fill="url(#iconbg)"/>
+  <text x="34" y="53" text-anchor="middle" font-family="Georgia, serif" font-size="44" font-weight="700" fill="#ffffff">M</text>
+  <!-- Wordmark -->
+  <text x="82" y="52" font-family="Georgia, serif" font-size="46" font-weight="700" fill="url(#wordmark)" letter-spacing="-2">Midnight</text>
+  <!-- Tagline -->
+  <text x="85" y="68" font-family="monospace" font-size="10" fill="#999" letter-spacing="1.4">THE NIGHT IS YOURS.</text>
+</svg>

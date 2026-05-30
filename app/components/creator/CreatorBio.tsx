@@ -1,3 +1,5 @@
+import { MapPin } from "lucide-react";
+
 type CreatorBioProps = {
     bio: string;
     categories: string[];
@@ -57,8 +59,9 @@ type CreatorBioProps = {
         </div>
   
         {/* LOCATION */}
-        <div className="text-sm text-gray-600">
-          📍 {location}
+        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+          <MapPin size={14} />
+          {location}
         </div>
       </div>
     );

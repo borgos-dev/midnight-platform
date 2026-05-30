@@ -1,23 +1,27 @@
 "use server";
 
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentCreatorProfile } from "@/app/lib/auth-helpers";
 
-const ADMIN_WHATSAPP = "+237694456905"; // ← put your real admin number
+const ADMIN_WHATSAPP = process.env.ADMIN_WHATSAPP_NUMBER ?? "+237694456905";
+
+// E.164-ish: optional leading +, 7–15 digits, no other characters
+const PHONE_RE = /^\+?[1-9]\d{6,14}$/;
 
 export async function savePhoneAndOpenWhatsApp(phone: string) {
-  const session = await auth();
+  const trimmed = (phone ?? "").trim();
+  if (!PHONE_RE.test(trimmed)) {
+    throw new Error("Invalid phone number. Use international format, e.g. +237...");
+  }
 
-  if (!session?.user?.email) {
+  const creator = await getCurrentCreatorProfile();
+  if (!creator) {
     throw new Error("Not authenticated");
   }
 
-  // find latest pending subscription
   const sub = await prisma.subscription.findFirst({
     where: {
-      creatorProfile: {
-        user: { email: session.user.email },
-      },
+      creatorProfileId: creator.id,
       status: "PENDING",
     },
     orderBy: { createdAt: "desc" },
@@ -27,16 +31,15 @@ export async function savePhoneAndOpenWhatsApp(phone: string) {
     throw new Error("No pending subscription found.");
   }
 
-  // save phone number
   await prisma.subscription.update({
     where: { id: sub.id },
-    data: { phoneNumber: phone },
+    data: { phoneNumber: trimmed },
   });
 
-  // prefilled WhatsApp message
+  // encodeURIComponent on every interpolated value — never raw user input
   const message = encodeURIComponent(
-    `Hello Admin, I just paid for ${sub.plan}.\nPhone used: ${phone}\nI am sending my screenshot now.`
+    `Hello Admin, I just paid for ${sub.plan}.\nPhone used: ${trimmed}\nI am sending my screenshot now.`
   );
-
-  return `https://wa.me/${ADMIN_WHATSAPP}?text=${message}`;
+  const adminDigits = ADMIN_WHATSAPP.replace(/[^0-9]/g, "");
+  return `https://wa.me/${encodeURIComponent(adminDigits)}?text=${message}`;
 }

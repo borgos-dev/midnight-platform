@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
-import { upgradeTierAction } from "./actions";
+import { Button } from "@/app/components/ui/Button";
 
 type Props = {
     currentTier: "REGULAR" | "VIP" | "VIP_PLUS";
@@ -23,53 +23,54 @@ export function UpgradeToVipDialog({ currentTier }: Props) {
 
     return (
         <>
-            {/* Trigger button (you can also move this into the header later) */}
-            <button
-                onClick={() => setOpen(true)}
-                className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
-            >
+            {/* Trigger â€” secondary because the dashboard already has its
+                own primary CTA (post upload). This button is a quieter
+                upsell, not the screen's main action. */}
+            <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
                 Upgrade to VIP
-            </button>
+            </Button>
 
             {open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                    <div className="w-full max-w-md rounded-2xl bg-slate-950 p-5 border border-slate-800">
-                        <h2 className="text-base font-semibold text-slate-50">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+                    <div className="w-full max-w-md rounded-2xl bg-surface p-5 border border-white/8">
+                        <h2 className="text-base font-semibold text-white">
                             Upgrade to VIP
                         </h2>
 
-                        <p className="mt-3 text-sm text-slate-200">
+                        <p className="mt-3 text-sm text-white/70 max-w-prose">
                             VIP creators can post to the feed, appear more often in search,
                             and see how many visitors click their WhatsApp.
                         </p>
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-eyebrow text-white/40 tracking-[0.04em]">
                             This upgrade helps you turn profile views into real interest.
                         </p>
 
-                        <ul className="mt-3 space-y-1 text-xs text-slate-200">
-                            <li>✅ Post to the public feed</li>
-                            <li>✅ Appear higher in search & categories</li>
-                            <li>✅ See WhatsApp clicks</li>
+                        <ul className="mt-3 space-y-1 text-label text-white/70">
+                            <li>âœ… Post to the public feed</li>
+                            <li>âœ… Appear higher in search &amp; categories</li>
+                            <li>âœ… See WhatsApp clicks</li>
                         </ul>
 
                         <div className="mt-4 flex justify-end gap-2">
-                            <button
+                            <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => setOpen(false)}
-                                className="rounded-full border border-slate-700 px-3 py-1.5 text-xs text-slate-200"
                                 disabled={isPending}
                             >
                                 Cancel
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="primary"
+                                size="sm"
                                 onClick={handleConfirm}
-                                className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-white disabled:opacity-60"
-                                disabled={isPending}
+                                loading={isPending}
                             >
-                                {isPending ? "Upgrading…" : "Confirm upgrade to VIP"}
-                            </button>
+                                Confirm upgrade to VIP
+                            </Button>
                         </div>
 
-                        <p className="mt-2 text-[10px] text-slate-500">
+                        <p className="mt-2 text-eyebrow text-white/35">
                             You can upgrade to VIP+ anytime.
                         </p>
                     </div>

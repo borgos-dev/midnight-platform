@@ -29,6 +29,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+isolate-*.log
+out.txt
+err.txt
+
+# local-disk uploads (now handled by Cloudinary)
+/public/uploads/
 
 # env files (can opt-in for committing if needed)
 .env*

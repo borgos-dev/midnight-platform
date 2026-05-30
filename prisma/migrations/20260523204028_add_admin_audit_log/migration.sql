@@ -1,0 +1,19 @@
+-- CreateTable
+CREATE TABLE `AdminAuditLog` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `action` ENUM('CREATOR_APPROVED', 'CREATOR_REJECTED', 'CREATOR_SUSPENDED', 'CREATOR_RESTORED', 'CREATOR_VERIFIED', 'CREATOR_UNVERIFIED', 'SUBSCRIPTION_APPROVED', 'BOOST_APPROVED', 'BOOST_REJECTED', 'REPORT_RESOLVED_REMOVED', 'REPORT_RESOLVED_NO_ACTION', 'REPORT_DISMISSED', 'AD_CREATED', 'AD_UPDATED', 'AD_PAUSED', 'AD_RESUMED', 'AD_DELETED') NOT NULL,
+    `adminUserId` INTEGER NOT NULL,
+    `targetType` VARCHAR(191) NULL,
+    `targetId` INTEGER NULL,
+    `note` VARCHAR(191) NULL,
+    `metadata` JSON NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `AdminAuditLog_adminUserId_idx`(`adminUserId`),
+    INDEX `AdminAuditLog_createdAt_idx`(`createdAt`),
+    INDEX `AdminAuditLog_action_idx`(`action`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `AdminAuditLog` ADD CONSTRAINT `AdminAuditLog_adminUserId_fkey` FOREIGN KEY (`adminUserId`) REFERENCES `user`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -1,7 +1,8 @@
-import PostCard from "./PostCard";
+import { FeedPost } from "./FeedPost";
 import { prisma } from "@/lib/prisma";
 import { refreshExpiredSubscriptions } from "@/app/lib/subscription";
 import { auth } from "@/auth";
+import { browserSafeMediaUrl, lockedPreviewUrl } from "@/app/lib/media-url";
 
 export default async function Feed() {
   const session = await auth();
@@ -45,7 +46,7 @@ export default async function Feed() {
 
   return (
     <div className="space-y-6">
-      {posts.map((post) => {
+      {posts.map((post, index) => {
         const creator = post.creatorprofile;
         if (!creator) return null;
 
@@ -69,29 +70,63 @@ export default async function Feed() {
         const isLocked = !hasAccess;
 
         return (
-          <PostCard
+          <FeedPost
             key={post.id}
             post={{
-              id: String(post.id),
-              // Security: only pass media path if accessible OR explicitly blurred for preview
-              media: hasAccess ? firstMedia.filePath : (post.blurred ? firstMedia.filePath : ""),
-              type: firstMedia.kind === "VIDEO" ? "video" : "image",
-              locked: isLocked,
-              blurred: post.blurred,
-              caption: isLocked ? "Premium Content" : post.content ?? "",
+              id: post.id,
+              // Security: only pass media path if accessible OR explicitly blurred for preview.
+              // browserSafeMediaUrl wraps the Cloudinary URL with f_mp4,vc_h264
+              // on videos so iPhone HEVC clips actually play in Chrome on Windows.
+              // Images pass through untouched.
+              // Locked-but-blurred posts get a SERVER-blurred Cloudinary
+              // derivative — never the original — so the protected media
+              // can't be lifted from the DOM/network. Fully-locked posts
+              // (no blur opt-in) get nothing.
+              mediaUrl: hasAccess
+                ? browserSafeMediaUrl(firstMedia.filePath, firstMedia.kind)
+                : post.blurred
+                  ? lockedPreviewUrl(firstMedia.filePath, firstMedia.kind)
+                  : "",
+              // Pass the Prisma enum value directly. FeedPost compares
+              // strictly to "VIDEO" — lowercasing here would make every
+              // post render as an <img>, which fails for actual videos.
+              mediaKind: firstMedia.kind,
+              // `blurred` here means "render this with the tease blur +
+              // lock overlay." That's TRUE only when the viewer is locked
+              // out AND the creator opted into the blur tease. Previously
+              // this was `blurred: isLocked` which applied the blur to
+              // every locked post regardless of the creator's choice —
+              // wrong, and produced black tiles when the URL was empty.
+              blurred: isLocked && post.blurred,
+              // Per-post creator choice — when false, blur stays but the
+              // WhatsApp lock CTA is replaced by a transparent tap target
+              // that routes to the creator profile.
+              showLock: post.showLock,
+              // Creator-controlled tease level (4..16 px CSS blur).
+              // Falls back to the column default if any older posts
+              // exist that pre-date the migration.
+              blurIntensity: post.blurIntensity,
+              // Real post title (alt text + heading). Caption lives in
+              // `content` and renders in the body of FeedPost, not in
+              // the title slot.
+              title: isLocked ? "Premium Content" : post.title,
               likes: post.likes.length,
               isLiked: post.likes.length > 0,
+              accessLevel: creatorTier,
+              creator: {
+                id: creator.id,
+                name: creator.displayName,
+                city: creator.location ?? "",
+                tier: creator.tier,
+                avatarUrl: creator.avatarUrl ?? "/creator1.jpg",
+                verified: creator.verified,
+                // WhatsApp number powers the lock overlay's deep-link.
+                // When the creator hasn't set one, the overlay falls
+                // back to a "view profile" link.
+                whatsappNumber: creator.whatsappNumber,
+              },
             }}
-            creator={{
-              id: String(creator.id),
-              name: creator.displayName,
-              city: creator.location ?? "",
-              image: creator.avatarUrl ?? "/creator1.jpg",
-              whatsapp: creator.whatsappNumber ?? "",
-              services: [],
-              posts: [],
-              verified: creator.status === "APPROVED",
-            }}
+            index={index}
           />
         );
       })}
