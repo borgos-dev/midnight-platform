@@ -227,7 +227,7 @@ export function DashboardHeader({
           color: tokens.textMuted,
           letterSpacing: "0.08em",
           marginBottom: "4px",
-        }}>VISIBILITY SCORE</div>
+        }}>SCORE DE VISIBILITÉ</div>
         <div style={{
           fontSize: "26px",
           fontWeight: 500,
@@ -248,7 +248,7 @@ export function DashboardHeader({
             color: "#5CB88A",
             letterSpacing: "0.06em",
             marginTop: "3px",
-          }}>TOP 5% IN {(location ?? "YOUR CITY").toUpperCase()}</div>
+          }}>TOP 5% À {(location ?? "VOTRE VILLE").toUpperCase()}</div>
         )}
       </div>
 
@@ -283,7 +283,7 @@ export function DashboardHeader({
             (e.currentTarget as HTMLElement).style.color = tokens.textMuted;
             (e.currentTarget as HTMLElement).style.borderColor = tokens.border;
           }}
-        >VIEW PROFILE</Link>
+        >VOIR MON PROFIL</Link>
 
         {/* Upgrade button */}
         {showUpgrade && (
@@ -309,7 +309,7 @@ export function DashboardHeader({
               (e.currentTarget as HTMLElement).style.background = tokens.accentSoft;
             }}
           >
-            {tier === "REGULAR" ? "UPGRADE TO VIP" : "UPGRADE TO VIP+"} →
+            {tier === "REGULAR" ? "PASSER EN VIP" : "PASSER EN VIP+"} →
           </button>
         )}
       </div>

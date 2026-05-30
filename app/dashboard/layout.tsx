@@ -20,22 +20,12 @@ import { LogoutButton } from "./components/LogoutButton";
 type NavItem = { label: string; href: string; icon: LucideIcon };
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Edit Profile", href: "/dashboard/profile", icon: UserCog },
-  { label: "My Posts", href: "/dashboard/media", icon: Images },
-  // Points at the tier picker, not the checkout form, so creators see
-  // every plan before being asked to pay. Each card on /upgrade routes
-  // them to /upgrade/checkout?plan=X with the selection prefilled.
-  { label: "Subscription", href: "/upgrade", icon: Crown },
-  // Points at the in-platform Contact page so creators can reach us without
-  // depending on a configured email client. Previously this was a mailto:
-  // which silently failed for any creator without a default mail handler
-  // (very common on web-only Cameroon devices).
+  { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Mon profil", href: "/dashboard/profile", icon: UserCog },
+  { label: "Mes publications", href: "/dashboard/media", icon: Images },
+  { label: "Abonnement", href: "/upgrade", icon: Crown },
   { label: "Support", href: "/contact", icon: LifeBuoy },
-  // Account-level controls. Hosts the Danger Zone (delete account) so
-  // it's discoverable from the sidebar without being inside Edit Profile,
-  // and leaves room for future account-wide toggles.
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Paramètres", href: "/dashboard/settings", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

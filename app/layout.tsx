@@ -31,11 +31,82 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000",
   ),
-  title: "Midnight — The Night is Yours.",
-  description: "Africa's most exclusive creator discovery and booking platform.",
+  title: {
+    default: "Midnight — The Night is Yours.",
+    template: "%s — Midnight",
+  },
+  description:
+    "Midnight est la plateforme exclusive de découverte de créatrices au Cameroun. Trouvez des profils vérifiés à Douala, Yaoundé, Bafoussam et plus encore. Contactez via WhatsApp. 18+ seulement.",
+  keywords: [
+    "Midnight Cameroon",
+    "créatrices Cameroun",
+    "adult creators Cameroon",
+    "Douala creators",
+    "Yaoundé creators",
+    "escort Douala",
+    "escort Yaoundé",
+    "compagne Douala",
+    "compagne Yaoundé",
+    "nuit Douala",
+    "nuit Cameroun",
+    "filles Douala",
+    "filles Yaoundé",
+    "rencontres Cameroun",
+    "midnight24",
+    "midnight24.cam",
+    "VIP creators Cameroon",
+    "premium creators Douala",
+    "WhatsApp creators Cameroon",
+    "adult entertainment Cameroon",
+    // Anglophone Cameroon (Southwest / Northwest regions)
+    "girls Buea",
+    "girls Limbe",
+    "girls Bamenda",
+    "escort Buea",
+    "escort Limbe",
+    "hookup Cameroon",
+    "nightlife Cameroon",
+    "meet girls Cameroon",
+    "Cameroon adult platform",
+  ],
+  authors: [{ name: "Midnight", url: "https://midnight24.cam" }],
+  creator: "Midnight",
+  publisher: "Midnight",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: "/Midnight-logo1.png",
     apple: "/Midnight-logo1.png",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Midnight",
+    title: "Midnight — The Night is Yours.",
+    description:
+      "Cameroon's exclusive creator discovery platform. Browse verified creators in Douala, Yaoundé and beyond.",
+    images: [
+      {
+        url: "/Midnight-logo1.png",
+        width: 1200,
+        height: 630,
+        alt: "Midnight — Cameroon Creator Discovery",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Midnight — The Night is Yours.",
+    description:
+      "Cameroon's exclusive creator discovery platform. Browse verified creators in Douala, Yaoundé and beyond.",
+    images: ["/Midnight-logo1.png"],
   },
 };
 
@@ -59,7 +130,7 @@ export default async function RootLayout({
   const isLoggedIn = !!userId;
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="fr" suppressHydrationWarning>
       <body
         className={`
           ${cormorant.variable}

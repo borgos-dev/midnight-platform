@@ -78,26 +78,26 @@ export function AgeGate() {
         <div className="age-gate__title-row">
           <span className="age-gate__chip">
             <ShieldAlert size={14} strokeWidth={2.5} />
-            ADULTS ONLY
+            ADULTES SEULEMENT
           </span>
           <h1 id="age-gate-title" className="age-gate__title">
-            You must be 18 or older to enter.
+            Vous devez avoir 18 ans ou plus pour entrer.
           </h1>
         </div>
 
         {/* Body */}
         <p id="age-gate-desc" className="age-gate__body">
-          Midnight is an adult discovery platform. By entering, you confirm
-          that you are at least 18 years old and that adult content is legal
-          in your jurisdiction.
+          Midnight est une plateforme de découverte pour adultes. En entrant,
+          vous confirmez avoir au moins 18 ans et que le contenu adulte est
+          légal dans votre pays.
         </p>
 
         {/* Anti-trafficking notice — mandatory disclosure for the platform's
             trust & safety story. Kept tight so visitors actually read it. */}
         <div className="age-gate__notice">
-          <strong>Zero tolerance.</strong> Midnight prohibits trafficking,
-          exploitation, coercion, and any depiction of minors. Suspicious
-          content can be reported on any profile page.
+          <strong>Tolérance zéro.</strong> Midnight interdit le trafic,
+          l'exploitation, la coercition et toute représentation de mineurs.
+          Tout contenu suspect peut être signalé sur chaque profil.
         </div>
 
         {/* Actions */}
@@ -108,23 +108,23 @@ export function AgeGate() {
             disabled={isPending}
             className="age-gate__btn age-gate__btn--primary"
           >
-            {isPending ? "ENTERING…" : "I AM 18 OR OLDER — ENTER"}
+            {isPending ? "ENTRÉE EN COURS…" : "J'AI 18 ANS OU PLUS — ENTRER"}
           </button>
           <button
             type="button"
             onClick={handleLeave}
             className="age-gate__btn age-gate__btn--secondary"
           >
-            I am under 18 — leave
+            J'ai moins de 18 ans — quitter
           </button>
         </div>
 
         {/* Footnote */}
         <p className="age-gate__footnote">
-          By entering you agree to our{" "}
-          <Link href="/terms" className="age-gate__link">Terms</Link>
+          En entrant, vous acceptez nos{" "}
+          <Link href="/terms" className="age-gate__link">Conditions d'utilisation</Link>
           {" · "}
-          <Link href="/privacy" className="age-gate__link">Privacy Policy</Link>
+          <Link href="/privacy" className="age-gate__link">Politique de confidentialité</Link>
         </p>
       </div>
 

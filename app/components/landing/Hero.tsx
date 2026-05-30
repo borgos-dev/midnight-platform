@@ -100,7 +100,7 @@ export function Hero() {
             }}
             aria-hidden
           />
-          18+ · CAMEROON · LIVE
+          18+ · CAMEROUN · EN LIGNE
         </div>
 
         {/* Headline — slightly larger, more breathing room below */}
@@ -115,7 +115,7 @@ export function Hero() {
             margin: "0 0 28px",
           }}
         >
-          The night is yours.
+          La nuit vous appartient.
         </h1>
 
         {/* Sub-headline — short, premium, looser line-height for breath */}
@@ -130,7 +130,7 @@ export function Hero() {
             fontWeight: 400,
           }}
         >
-          Private connections. Premium experiences. Complete discretion.
+          Connexions privées. Expériences premium. Discrétion totale.
         </p>
 
         {/* CTAs — flex-row on desktop, stacked tight on mobile via media query */}
@@ -157,7 +157,7 @@ export function Hero() {
               transition: "transform 0.15s ease, box-shadow 0.15s ease",
             }}
           >
-            BROWSE CREATORS
+            DÉCOUVRIR LES CRÉATRICES
           </a>
 
           <Link
@@ -180,7 +180,7 @@ export function Hero() {
               transition: "border-color 0.2s ease, background 0.2s ease",
             }}
           >
-            BECOME A CREATOR
+            DEVENIR CRÉATRICE
           </Link>
         </div>
 

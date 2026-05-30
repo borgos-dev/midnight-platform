@@ -10,9 +10,16 @@ import type { ReelPost } from "@/app/components/feed/FeedReelViewer";
 import type { AccessLevel } from "@prisma/client";
 
 export const metadata: Metadata = {
-  title: "Feed — Midnight",
+  title: "Feed — Latest Creator Posts in Cameroon",
   description:
-    "Latest posts from creators on Midnight. Discover photos and videos in a tier-prioritized timeline.",
+    "Browse the latest photos and videos from verified creators in Douala, Yaoundé and across Cameroon. Updated daily. 18+ only.",
+  keywords: [
+    "creator feed Cameroon",
+    "photos filles Douala",
+    "videos créatrices Yaoundé",
+    "adult content Cameroon",
+    "Midnight feed",
+  ],
 };
 
 // Whitelist for the filter query param. An unknown value falls back to "all".

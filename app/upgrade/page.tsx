@@ -4,9 +4,17 @@ import { Crown, Diamond, Star, Circle, Check, TrendingUp, ShieldCheck } from "lu
 import { PLANS, formatPriceCfa, type PaidPlanCode } from "@/app/lib/plans";
 
 export const metadata: Metadata = {
-  title: "Plans — Midnight",
+  title: "Creator Plans & Pricing — Midnight Cameroon",
   description:
-    "Pick a plan and unlock visibility, analytics, and trust signals. VIP+, VIP, and Premium tiers — Regular stays free.",
+    "Become a verified creator on Midnight. VIP+, VIP, Premium and free plans. Get discovered by visitors across Douala, Yaoundé and Cameroon. Start free today.",
+  keywords: [
+    "devenir créatrice Cameroun",
+    "créatrice VIP Douala",
+    "abonnement créatrice Cameroun",
+    "creator subscription Cameroon",
+    "midnight plans pricing",
+    "get discovered Cameroon",
+  ],
 };
 
 // Per-tier visual identity. Colors mirror the existing landing-page tier

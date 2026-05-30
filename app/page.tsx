@@ -28,15 +28,53 @@ import type { LatestFeedItem } from "./components/landing/LatestFeedStrip";
 // happen in a future /?city=X-aware generateMetadata when we want city
 // pages to share with localized previews. For MVP one card is enough.
 export const metadata: Metadata = {
-  title: "Midnight — The Night is Yours.",
+  title: "Midnight — Découvrez les Meilleures Créatrices au Cameroun",
   description:
-    "Discover Cameroon's most exclusive creators. Browse profiles, connect on WhatsApp, stay anonymous.",
+    "Parcourez les créatrices vérifiées à Douala, Yaoundé, Bafoussam, Kribi et partout au Cameroun. Contactez directement via WhatsApp. Discret. Anonyme. 18+ seulement.",
+  keywords: [
+    // How Cameroonians actually search (slang + everyday French)
+    "plan Douala",
+    "plan Yaoundé",
+    "plan nuit Douala",
+    "rencard Douala",
+    "fille de nuit Douala",
+    "fille de nuit Yaoundé",
+    "numéro filles Douala WhatsApp",
+    "bonne amie Yaoundé",
+    "bonne amie Douala",
+    "accompagnatrice Douala",
+    "accompagnatrice Yaoundé",
+    "sortie nuit Douala",
+    "sortie nuit Yaoundé",
+    "filles disponibles Douala",
+    "filles disponibles Cameroun",
+    "contact filles Douala",
+    // City-level discovery
+    "créatrices Douala",
+    "créatrices Yaoundé",
+    "créatrices Bafoussam",
+    "créatrices Kribi",
+    "créatrices Buea",
+    "nuit Douala",
+    "nuit Yaoundé",
+    "nuit Cameroun",
+    // Brand + platform
+    "Midnight Cameroun",
+    "midnight24",
+    "midnight24.cam",
+    "VIP creators Douala",
+    "escort Douala",
+    "escort Yaoundé",
+    "adult creators Cameroon",
+    "compagne Douala",
+    "compagne Yaoundé",
+  ],
   openGraph: {
-    title: "Midnight — The Night is Yours.",
+    title: "Midnight — Discover Exclusive Creators in Cameroon",
     description:
-      "Discover Cameroon's most exclusive creators. Browse profiles, connect on WhatsApp.",
+      "Browse verified creators in Douala, Yaoundé and beyond. Connect via WhatsApp. Anonymous. 18+ only.",
     type: "website",
-    images: ["/logo-compact.svg"],
+    images: ["/Midnight-logo1.png"],
   },
 };
 
