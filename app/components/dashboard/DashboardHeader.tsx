@@ -71,35 +71,72 @@ export function DashboardHeader({
       overflow: "hidden",
     }}>
       <style>{`
+        /* Mobile: stack everything vertically */
         .mn-dash-header {
           display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          justify-content: space-between;
+          flex-direction: column;
           gap: 12px;
         }
+        /* Tablet+: single row with space-between */
+        @media (min-width: 640px) {
+          .mn-dash-header {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+          }
+        }
+        /* Identity row: avatar + name always in a row */
         .mn-dash-header-left {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 12px;
           min-width: 0;
           flex: 1;
         }
+        /* Score: inline with identity on mobile (right-aligned),
+           separate block on tablet+ */
         .mn-dash-header-score {
+          text-align: right;
           flex-shrink: 0;
-          text-align: center;
-          min-width: 80px;
         }
+        @media (min-width: 640px) {
+          .mn-dash-header-score {
+            text-align: center;
+          }
+        }
+        /* Identity + score on same row on mobile */
+        .mn-dash-header-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        /* Actions: full-width row of buttons on mobile */
         .mn-dash-header-actions {
           display: flex;
           align-items: center;
           gap: 8px;
           flex-wrap: wrap;
+          width: 100%;
         }
-        @media (max-width: 480px) {
+        /* Text buttons (links) grow to fill space; bell button stays compact */
+        .mn-dash-header-actions a {
+          flex: 1;
+          text-align: center;
+          justify-content: center;
+          min-width: 0;
+        }
+        /* Bell button — stays icon-sized, never stretches */
+        .mn-dash-header-actions button {
+          flex: none;
+        }
+        @media (min-width: 640px) {
           .mn-dash-header-actions {
-            width: 100%;
-            justify-content: flex-end;
+            width: auto;
+          }
+          .mn-dash-header-actions a {
+            flex: none;
           }
         }
       `}</style>
@@ -121,6 +158,8 @@ export function DashboardHeader({
         }} />
       )}
 
+      {/* Top row: identity (left) + score (right) on mobile */}
+      <div className="mn-dash-header-top">
       {/* Left — Identity */}
       <div className="mn-dash-header-left">
         {/* Avatar */}
@@ -284,6 +323,8 @@ export function DashboardHeader({
             marginTop: "3px",
           }}>TOP 5% À {(location ?? "VOTRE VILLE").toUpperCase()}</div>
         )}
+      </div>
+      {/* close mn-dash-header-top */}
       </div>
 
       {/* Right — Actions */}

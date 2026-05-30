@@ -190,6 +190,7 @@ function Card({
 
   return (
     <div
+      className="mn-boost-card"
       style={{
         padding: "14px 16px",
         borderRadius: "12px",
@@ -197,17 +198,37 @@ function Card({
         background: palette.bg,
         display: "flex",
         flexDirection: "column",
-        gap: "12px",
+        gap: "10px",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "14px",
-          flexWrap: "wrap",
-        }}
-      >
+      <style>{`
+        .mn-boost-card-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .mn-boost-card-cta {
+          display: block;
+          width: 100%;
+          text-align: center;
+          padding: 10px 16px;
+          border-radius: 10px;
+          text-decoration: none;
+          font-family: var(--font-dm-mono);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.10em;
+        }
+        @media (min-width: 480px) {
+          .mn-boost-card-cta {
+            width: auto;
+            display: inline-block;
+          }
+        }
+      `}</style>
+
+      {/* Top row: icon + text */}
+      <div className="mn-boost-card-row">
         <span
           style={{
             display: "inline-flex",
@@ -219,6 +240,7 @@ function Card({
             background: palette.accent + "22",
             color: palette.accent,
             flexShrink: 0,
+            marginTop: "2px",
           }}
           aria-hidden
         >
@@ -241,7 +263,7 @@ function Card({
           <div
             style={{
               fontFamily: "var(--font-cormorant)",
-              fontSize: "17px",
+              fontSize: "18px",
               fontWeight: 700,
               lineHeight: 1.15,
               color: "var(--text-primary)",
@@ -261,32 +283,24 @@ function Card({
             {body}
           </div>
         </div>
-
-        {cta && (
-          <Link
-            href={cta.href}
-            style={{
-              padding: "9px 16px",
-              borderRadius: "10px",
-              background: `linear-gradient(135deg, ${palette.accent}, ${palette.accent}cc)`,
-              color: tone === "cta" || tone === "renew" ? "#fff" : "#1A1A1A",
-              textDecoration: "none",
-              fontFamily: "var(--font-dm-mono)",
-              fontSize: "10.5px",
-              fontWeight: 800,
-              letterSpacing: "0.10em",
-              flexShrink: 0,
-            }}
-          >
-            {cta.label}
-          </Link>
-        )}
       </div>
 
-      {/* Metrics row — only renders when performance data is provided. Lives
-          below the headline so the card has a clear hierarchy (status →
-          numbers → action). On phones it stays a single row because the
-          two stats are short. */}
+      {/* CTA button — full width on mobile, auto on larger screens */}
+      {cta && (
+        <Link
+          href={cta.href}
+          className="mn-boost-card-cta"
+          style={{
+            background: `linear-gradient(135deg, ${palette.accent}, ${palette.accent}cc)`,
+            color: tone === "cta" || tone === "renew" ? "#fff" : "#1A1A1A",
+            boxShadow: `0 4px 16px ${palette.accent}44`,
+          }}
+        >
+          {cta.label}
+        </Link>
+      )}
+
+      {/* Metrics row — views + WA clicks during the boost window */}
       {metrics && (
         <div
           style={{
@@ -306,10 +320,7 @@ function Card({
           />
           <span
             aria-hidden
-            style={{
-              width: "1px",
-              background: `${palette.accent}33`,
-            }}
+            style={{ width: "1px", background: `${palette.accent}33` }}
           />
           <MetricChip
             icon={<MessageCircle size={12} strokeWidth={2.4} />}
