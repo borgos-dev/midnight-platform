@@ -35,7 +35,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function GrantForm({ creators }: Props) {
   const [creatorId, setCreatorId] = useState<string>("");
   const [plan, setPlan] = useState<(typeof PLAN_OPTIONS)[number]>("VIP_PLUS");
-  const [durationDays, setDurationDays] = useState<number>(90);
+  const [durationDays, setDurationDays] = useState<number>(60);
   const [verifiedAuto, setVerifiedAuto] = useState(true);
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{

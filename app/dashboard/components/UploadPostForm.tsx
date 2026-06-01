@@ -679,6 +679,35 @@ export default function UploadPostForm({
           </span>
         </label>
 
+        {/* Content rules + discretion tools — shown right before the file
+            picker so creators see it the moment they're choosing what
+            to upload. */}
+        <div className="rounded-lg border border-white/8 bg-white/2 px-3.5 py-3 space-y-2">
+          <p className="text-[11px] font-semibold text-white/70">
+            Platform rules &amp; privacy tools
+          </p>
+          <p className="text-[10.5px] text-white/45 leading-relaxed">
+            Only <strong className="text-white/60">original content</strong> is
+            allowed — no photos or videos carrying watermarks from other
+            platforms (Yamohub, Liabby, etc.). Content with external watermarks
+            will be removed.
+          </p>
+          <p className="text-[10.5px] text-white/45 leading-relaxed">
+            Tools to protect your identity:{" "}
+            <strong className="text-white/60">Pixelate my face</strong> (auto-hides
+            your face before upload) ·{" "}
+            <strong className="text-white/60">ADD BLUR</strong> (manually blur
+            any region on a photo or video)
+            {creatorTier === "VIP_PLUS" && (
+              <>
+                {" "}·{" "}
+                <strong className="text-amber-300/80">Blur preview</strong> (fog
+                your content for non-subscribers to build exclusivity)
+              </>
+            )}
+          </p>
+        </div>
+
         {/* File Input */}
         <div>
           <input
