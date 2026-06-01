@@ -684,25 +684,25 @@ export default function UploadPostForm({
             to upload. */}
         <div className="rounded-lg border border-white/8 bg-white/2 px-3.5 py-3 space-y-2">
           <p className="text-[11px] font-semibold text-white/70">
-            Platform rules &amp; privacy tools
+            Règles de la plateforme &amp; outils de discrétion
           </p>
           <p className="text-[10.5px] text-white/45 leading-relaxed">
-            Only <strong className="text-white/60">original content</strong> is
-            allowed — no photos or videos carrying watermarks from other
-            platforms (Yamohub, Liabby, etc.). Content with external watermarks
-            will be removed.
+            Seul le <strong className="text-white/60">contenu original</strong> est
+            autorisé — aucune photo ou vidéo avec le filigrane d&apos;autres
+            plateformes (Yamohub, Liabby, Jedolo, etc.). Tout contenu avec un
+            filigrane externe sera supprimé.
           </p>
           <p className="text-[10.5px] text-white/45 leading-relaxed">
-            Tools to protect your identity:{" "}
-            <strong className="text-white/60">Pixelate my face</strong> (auto-hides
-            your face before upload) ·{" "}
-            <strong className="text-white/60">ADD BLUR</strong> (manually blur
-            any region on a photo or video)
+            Outils pour protéger ton identité :{" "}
+            <strong className="text-white/60">Pixeliser mon visage</strong> (cache
+            ton visage automatiquement avant l&apos;envoi) ·{" "}
+            <strong className="text-white/60">ADD BLUR</strong> (floute
+            manuellement n&apos;importe quelle zone d&apos;une photo ou vidéo)
             {creatorTier === "VIP_PLUS" && (
               <>
                 {" "}·{" "}
-                <strong className="text-amber-300/80">Blur preview</strong> (fog
-                your content for non-subscribers to build exclusivity)
+                <strong className="text-amber-300/80">Aperçu flouté</strong> (floute
+                ton contenu pour les non-abonnés afin de créer de l&apos;exclusivité)
               </>
             )}
           </p>
