@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AccessLevel } from "@prisma/client";
 import { toggleLikeById } from "@/app/actions/likePost";
+import { incrementPostView } from "@/app/actions/viewPost";
 
 type FeedPostProps = {
   post: {
@@ -50,7 +51,7 @@ type FeedPostProps = {
     };
     likes: number;
     isLiked: boolean;
-    /** Optional: creator's monthly profile views, shown as a stat next to likes */
+    /** Total view count for this post */
     views?: number;
   };
   index: number;
@@ -69,6 +70,7 @@ export function FeedPost({ post, index, onOpenReel }: FeedPostProps) {
   const [hovered, setHovered] = useState(false);
   const [liked, setLiked] = useState(post.isLiked);
   const [likeCount, setLikeCount] = useState(post.likes);
+  const [viewCount, setViewCount] = useState(post.views ?? 0);
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -150,6 +152,11 @@ export function FeedPost({ post, index, onOpenReel }: FeedPostProps) {
         }
       }
     });
+  }
+
+  function handleViewIncrement() {
+    setViewCount((prev) => prev + 1);
+    incrementPostView(post.id).catch(() => {});
   }
 
   function formatTime(seconds: number) {
@@ -327,6 +334,7 @@ export function FeedPost({ post, index, onOpenReel }: FeedPostProps) {
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        onClick={handleViewIncrement}
         style={{
           position: "relative", width: "100%",
           aspectRatio: "1/1", overflow: "hidden",
@@ -350,6 +358,8 @@ export function FeedPost({ post, index, onOpenReel }: FeedPostProps) {
               loop
               autoPlay
               playsInline
+              controlsList="nodownload"
+              onContextMenu={(e) => e.preventDefault()}
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
             />
@@ -650,19 +660,17 @@ export function FeedPost({ post, index, onOpenReel }: FeedPostProps) {
               </span>
             </motion.button>
 
-            {/* Views (creator's monthly profile views) */}
-            {typeof post.views === "number" && post.views > 0 && (
-              <span style={{
-                display: "flex", alignItems: "center", gap: "5px",
-                fontSize: "11px",
-                fontFamily: "var(--font-dm-mono)",
-                color: "var(--text-muted)",
-                letterSpacing: "0.04em",
-              }}>
-                <Eye size={14} />
-                {formatCount(post.views)}
-              </span>
-            )}
+            {/* Post view count */}
+            <span style={{
+              display: "flex", alignItems: "center", gap: "5px",
+              fontSize: "11px",
+              fontFamily: "var(--font-dm-mono)",
+              color: "var(--text-muted)",
+              letterSpacing: "0.04em",
+            }}>
+              <Eye size={14} />
+              {formatCount(viewCount)}
+            </span>
           </div>
 
           {/* Video duration */}

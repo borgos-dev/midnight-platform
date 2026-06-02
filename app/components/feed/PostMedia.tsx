@@ -17,6 +17,8 @@ export default function PostMedia({ media, locked }: Props) {
           muted
           loop
           playsInline
+          controlsList="nodownload"
+          onContextMenu={(e) => e.preventDefault()}
           className={`w-full object-cover ${
             locked ? "blur-xl scale-105" : ""
           }`}

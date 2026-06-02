@@ -496,8 +496,9 @@ model post {
   // off per-post during upload — see UploadPostForm. The blur itself
   // is controlled by `blurred` + `blurIntensity` above; this flag only
   // affects the lock overlay rendered in FeedPost.
-  showLock Boolean @default(true)
-  postType PostType @default(FEED)
+  showLock  Boolean @default(true)
+  viewCount Int     @default(0)
+  postType  PostType @default(FEED)
 
   creatorprofile creatorprofile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 

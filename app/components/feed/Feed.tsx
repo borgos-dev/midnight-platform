@@ -112,6 +112,7 @@ export default async function Feed() {
               title: isLocked ? "Premium Content" : post.title,
               likes: post.likes.length,
               isLiked: post.likes.length > 0,
+              views: post.viewCount,
               accessLevel: creatorTier,
               creator: {
                 id: creator.id,

@@ -483,6 +483,8 @@ function ReelItem({
               loop
               playsInline
               autoPlay={index === 0}
+              controlsList="nodownload"
+              onContextMenu={(e) => e.preventDefault()}
               onTimeUpdate={handleTimeUpdate}
               style={{
                 width: "100%",

@@ -80,6 +80,8 @@ export function FeaturedStrip({ items }: Props) {
                     loop
                     autoPlay
                     playsInline
+                    controlsList="nodownload"
+                    onContextMenu={(e) => e.preventDefault()}
                   />
                 ) : (
                   <Image

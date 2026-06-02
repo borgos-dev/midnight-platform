@@ -242,6 +242,8 @@ function FeedStripCard({ item }: { item: LatestFeedItem }) {
                 preload="metadata"
                 autoPlay={item.locked} // keeps the blur tease alive on locked clips
                 loop={item.locked}
+                controlsList="nodownload"
+                onContextMenu={(e) => e.preventDefault()}
                 style={{
                   width: "100%",
                   height: "100%",

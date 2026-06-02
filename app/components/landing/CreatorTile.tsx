@@ -51,7 +51,7 @@ export function CreatorTile({ creator }: { creator: CreatorTileData }) {
 
   const locationLine =
     creator.neighborhood && creator.city
-      ? `${creator.neighborhood}, ${creator.city}`
+      ? `${creator.city}, ${creator.neighborhood}`
       : creator.city || "—";
 
   return (
@@ -73,6 +73,8 @@ export function CreatorTile({ creator }: { creator: CreatorTileData }) {
               loop
               autoPlay
               playsInline
+              controlsList="nodownload"
+              onContextMenu={(e) => e.preventDefault()}
             />
           ) : (
             <Image
