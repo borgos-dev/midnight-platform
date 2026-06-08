@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { refreshExpiredSubscriptions } from "@/app/lib/subscription";
 import { getCurrentUserId } from "@/app/lib/auth-helpers";
@@ -23,6 +24,94 @@ import { browserSafeMediaUrl, lockedPreviewUrl } from "./lib/media-url";
 import { LandingHome } from "./components/landing/LandingHome";
 import type { AdSlotData } from "./components/landing/AdSlot";
 import type { LatestFeedItem } from "./components/landing/LatestFeedStrip";
+
+// ─── Cached data fetchers ────────────────────────────────────────────────────
+// City groups almost never change (a new creator in a new city), so 5 minutes
+// is safe. Category pills and sort counts are per-city so the cache key
+// includes the city slug. All creators + analytics is cached for 60 s — short
+// enough to feel fresh, long enough to absorb traffic bursts from Cameroon.
+
+const getCachedCityGroups = unstable_cache(
+  async () =>
+    prisma.creatorprofile.groupBy({
+      by: ["location"],
+      where: { status: "APPROVED", location: { not: null } },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+    }),
+  ["landing-city-groups"],
+  { revalidate: 300 },
+);
+
+const getCachedCategories = unstable_cache(
+  async (city: string) =>
+    prisma.category.findMany({
+      select: {
+        slug: true,
+        label: true,
+        _count: {
+          select: {
+            creators: {
+              where: {
+                creatorprofile: {
+                  status: "APPROVED",
+                  ...(city ? { location: city } : {}),
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { displayOrder: "asc" },
+    }),
+  ["landing-categories"],
+  { revalidate: 120 },
+);
+
+const getCachedSortCounts = unstable_cache(
+  async (city: string, category: string) => {
+    const scope: Record<string, unknown> = { status: "APPROVED" };
+    if (city) scope.location = city;
+    if (category) scope.categories = { some: { category: { slug: category } } };
+    // newCutoff is computed inside the cached fn so the Date is NOT part of
+    // the cache key (a Date changes every ms and would break cache hits).
+    // The 2-min revalidate means at most ~2 min of drift on the "New" count,
+    // which is imperceptible given NEW_CREATOR_DAYS is multiple days.
+    const newCutoffMs = Date.now() - NEW_CREATOR_DAYS * 86_400_000;
+    return Promise.all([
+      prisma.creatorprofile.count({ where: { ...scope, tier: "VIP_PLUS" } }),
+      prisma.creatorprofile.count({ where: { ...scope, tier: "VIP" } }),
+      prisma.creatorprofile.count({ where: { ...scope, tier: "PREMIUM" } }),
+      prisma.creatorprofile.count({ where: { ...scope, verified: true } }),
+      prisma.creatorprofile.count({ where: { ...scope, createdAt: { gte: new Date(newCutoffMs) } } }),
+    ]);
+  },
+  ["landing-sort-counts"],
+  { revalidate: 120 },
+);
+
+const getCachedFeedItems = unstable_cache(
+  async (city: string) =>
+    prisma.post.findMany({
+      where: {
+        postType: "FEED",
+        creatorprofile: {
+          status: "APPROVED",
+          ...(city ? { location: city } : {}),
+        },
+      },
+      include: {
+        creatorprofile: {
+          select: { id: true, displayName: true, avatarUrl: true, tier: true, verified: true },
+        },
+        media: { take: 1 },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+  ["landing-feed-items"],
+  { revalidate: 60 },
+);
 
 // Public landing — single OG card on every share. Per-city OG would
 // happen in a future /?city=X-aware generateMetadata when we want city
@@ -99,7 +188,10 @@ export default async function Page({
     ? (rawSort as SortSlug)
     : "";
 
-  await refreshExpiredSubscriptions();
+  // Fire-and-forget: subscription expiry is a cleanup task that doesn't need
+  // to block the render. If a creator's tier is stale by one request that's
+  // acceptable — the next request will show the corrected tier.
+  refreshExpiredSubscriptions().catch(() => {});
   const viewerUserId = await getCurrentUserId();
 
   // Auto-detect the visitor's city on first visit. The new landing layout
@@ -124,71 +216,25 @@ export default async function Page({
     }
   }
 
-  // City counts for the location-filter section. Indexed groupBy — fast.
-  // Cities with zero approved creators don't appear (groupBy omits them).
-  const cityGroups = await prisma.creatorprofile.groupBy({
-    by: ["location"],
-    where: {
-      status: "APPROVED",
-      location: { not: null },
-    },
-    _count: { id: true },
-    orderBy: { _count: { id: "desc" } },
-  });
+  // City counts — cached 5 min (city list changes only when a creator
+  // in a new city gets approved, which is rare).
+  const cityGroups = await getCachedCityGroups();
 
   const cities = cityGroups
     .filter((g): g is typeof g & { location: string } => !!g.location)
     .map((g) => ({ name: g.location, count: g._count.id }));
 
-  // Category pill row — same data shape as cities (slug + label + count).
-  // Categories with zero approved creators in the current city filter are
-  // hidden so visitors never tap a dead pill.
-  const categories = await prisma.category.findMany({
-    select: {
-      slug: true,
-      label: true,
-      _count: {
-        select: {
-          creators: {
-            where: {
-              creatorprofile: {
-                status: "APPROVED",
-                ...(explicitCity ? { location: explicitCity } : {}),
-              },
-            },
-          },
-        },
-      },
-    },
-    orderBy: { displayOrder: "asc" },
-  });
+  // Category pill row — cached 2 min, scoped to city so the pill counts
+  // reflect the active filter without extra query params in the cache key.
+  const categories = await getCachedCategories(explicitCity);
 
   const categoryPills = categories
     .map((c) => ({ slug: c.slug, label: c.label, count: c._count.creators }))
     .filter((c) => c.count > 0);
 
-  // Sort pill availability — count approved creators in each bucket, scoped
-  // to the current city + category, so we can hide pills with zero matches
-  // (otherwise a visitor taps "Premium" and lands on an empty grid).
-  // 5 parallel COUNT queries — indexed on tier/verified/createdAt so cheap.
-  const sortScope: Record<string, unknown> = { status: "APPROVED" };
-  if (explicitCity) sortScope.location = explicitCity;
-  if (explicitCategory) {
-    sortScope.categories = {
-      some: { category: { slug: explicitCategory } },
-    };
-  }
-  const newCutoff = new Date(Date.now() - NEW_CREATOR_DAYS * 86_400_000);
-
-  const [cVipPlus, cVip, cPremium, cVerified, cNew] = await Promise.all([
-    prisma.creatorprofile.count({ where: { ...sortScope, tier: "VIP_PLUS" } }),
-    prisma.creatorprofile.count({ where: { ...sortScope, tier: "VIP" } }),
-    prisma.creatorprofile.count({ where: { ...sortScope, tier: "PREMIUM" } }),
-    prisma.creatorprofile.count({ where: { ...sortScope, verified: true } }),
-    prisma.creatorprofile.count({
-      where: { ...sortScope, createdAt: { gte: newCutoff } },
-    }),
-  ]);
+  // Sort pill counts — cached 2 min, scoped to city + category.
+  const [cVipPlus, cVip, cPremium, cVerified, cNew] =
+    await getCachedSortCounts(explicitCity, explicitCategory);
 
   const sortPills = [
     { slug: "vipPlus",  label: "VIP+",     count: cVipPlus },
@@ -438,36 +484,9 @@ export default async function Page({
     initialHasMore = mainSorted.length > GRID_PAGE_SIZE;
   }
 
-  // Latest feed posts — homepage discovery teaser for /feed. We pull a
-  // single query of the 8 most recent feed posts from approved creators,
-  // then shape them into the strip's data type. Locked posts (visitor's
-  // tier < post.accessLevel) are surfaced with mediaUrl=null + locked=true
-  // so the strip card renders a "PREMIUM" lock overlay without exposing
-  // protected media. We scope to the explicitCity filter when active so
-  // the strip stays consistent with the rest of the homepage.
-  const recentFeedPosts = await prisma.post.findMany({
-    where: {
-      postType: "FEED",
-      creatorprofile: {
-        status: "APPROVED",
-        ...(explicitCity ? { location: explicitCity } : {}),
-      },
-    },
-    include: {
-      creatorprofile: {
-        select: {
-          id: true,
-          displayName: true,
-          avatarUrl: true,
-          tier: true,
-          verified: true,
-        },
-      },
-      media: { take: 1 },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 8,
-  });
+  // Latest feed posts — cached 60 s. Teaser strip updates within a minute
+  // of new posts; visitors who land in rapid succession share the same result.
+  const recentFeedPosts = await getCachedFeedItems(explicitCity);
 
   // Anonymous visitor = REGULAR-equivalent access for tier-gating purposes.
   // Real tiered access is enforced inside the creator profile feed tab.

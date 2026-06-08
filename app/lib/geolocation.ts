@@ -50,10 +50,29 @@ export async function detectVisitorCity(): Promise<DetectionResult> {
       return { city: null, source: "none" };
     }
 
+    // Fetch approved city list once — reused across all three detection
+    // layers below so we make one DB round-trip regardless of which path
+    // fires (previously each matchKnownCity call was a separate query).
+    const knownCityRows = await prisma.creatorprofile.findMany({
+      where: { status: "APPROVED" },
+      select: { location: true },
+      distinct: ["location"],
+    });
+    const findMatch = (detected: string): string | null => {
+      const normalized = detected.trim().toLowerCase();
+      if (!normalized) return null;
+      for (const r of knownCityRows) {
+        if (r.location && r.location.toLowerCase() === normalized) {
+          return r.location;
+        }
+      }
+      return null;
+    };
+
     // 1. Cookie cache
     const cached = cookieJar.get(COOKIE_NAME)?.value;
     if (cached) {
-      const match = await matchKnownCity(cached);
+      const match = findMatch(cached);
       if (match) return { city: match, source: "cookie" };
     }
 
@@ -65,7 +84,7 @@ export async function detectVisitorCity(): Promise<DetectionResult> {
       null;
     if (edgeCity) {
       const decoded = safeDecode(edgeCity);
-      const match = await matchKnownCity(decoded);
+      const match = findMatch(decoded);
       if (match) return { city: match, source: "edge" };
     }
 
@@ -84,7 +103,7 @@ export async function detectVisitorCity(): Promise<DetectionResult> {
 
     const ipapiCity = await fetchIpapiCity(ip);
     if (ipapiCity) {
-      const match = await matchKnownCity(ipapiCity);
+      const match = findMatch(ipapiCity);
       if (match) return { city: match, source: "ipapi" };
     }
 
@@ -127,31 +146,6 @@ export async function setGeoOptOut() {
 // ─────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────
-
-/**
- * Case-insensitive match of a detected city name against the set of
- * cities that actually have approved creators. Returns the canonical
- * spelling from the database (so the URL query param matches the
- * filter exactly).
- */
-async function matchKnownCity(detected: string): Promise<string | null> {
-  if (!detected) return null;
-  const normalized = detected.trim().toLowerCase();
-  if (!normalized) return null;
-
-  const rows = await prisma.creatorprofile.findMany({
-    where: { status: "APPROVED" },
-    select: { location: true },
-    distinct: ["location"],
-  });
-
-  for (const r of rows) {
-    if (r.location && r.location.toLowerCase() === normalized) {
-      return r.location;
-    }
-  }
-  return null;
-}
 
 function firstIp(forwardedFor: string | null): string | null {
   if (!forwardedFor) return null;

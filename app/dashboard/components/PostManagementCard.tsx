@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useTransition, useState, useRef, useEffect } from "react";
+import { useTransition, useState } from "react";
 import {
   deletePost,
   editPostCaption,
@@ -64,12 +64,6 @@ export default function PostManagementCard({ post, creatorTier }: Props) {
   /* â”€â”€ confirm-delete flag â”€â”€ */
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  /* â”€â”€ video ref for autoplay â”€â”€ */
-  const videoRef = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    videoRef.current?.play().catch(() => {});
-  }, []);
-
   /* â”€â”€ Handlers â”€â”€ */
 
   function handleSaveCaption() {
@@ -119,7 +113,6 @@ export default function PostManagementCard({ post, creatorTier }: Props) {
           {firstMedia ? (
             firstMedia.kind === "VIDEO" ? (
               <video
-                ref={videoRef}
                 // Force browser-safe H.264 so iPhone HEVC clips actually
                 // play here too — without this, the creator sees a black
                 // tile and assumes their post is broken.
@@ -127,6 +120,7 @@ export default function PostManagementCard({ post, creatorTier }: Props) {
                   firstMedia.filePath,
                   firstMedia.kind as "VIDEO" | "IMAGE",
                 )}
+                autoPlay
                 muted
                 loop
                 playsInline
