@@ -8,6 +8,7 @@ import { GlobalProviders } from "./components/GlobalProviders";
 import { AgeGate } from "./components/age-gate/AgeGate";
 import { isAgeVerified } from "./lib/age-gate";
 import { getCurrentUserId } from "./lib/auth-helpers";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
